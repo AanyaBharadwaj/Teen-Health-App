@@ -1,7 +1,58 @@
+import os
+import asyncio
 import google.generativeai as genai
 import streamlit as st
+from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage
 from guardrails import get_system_prompt, is_crisis_situation, CRISIS_RESOURCES
+
+try:
+    import edge_tts
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+    st.warning("Text-to-speech not available. Run: pip install edge-tts")
+
+# Load environment variables
+load_dotenv()
+
+# Text-to-Speech Functions
+async def text_to_speech(text):
+    """Convert text to speech using Edge TTS"""
+    if not TTS_AVAILABLE:
+        return None
+    try:
+        communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
+        audio_bytes = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_bytes += chunk["data"]
+        return audio_bytes
+    except Exception as e:
+        st.error(f"Error generating audio: {str(e)}")
+        return None
+
+def play_tts(text):
+    """Wrapper to run async TTS in Streamlit"""
+    if not TTS_AVAILABLE:
+        return None
+    try:
+        # Use asyncio.run() for cleaner event loop management
+        audio_bytes = asyncio.run(text_to_speech(text))
+        return audio_bytes
+    except RuntimeError as e:
+        # Handle "event loop already running" error
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is already running, create a new one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            audio_bytes = loop.run_until_complete(text_to_speech(text))
+            return audio_bytes
+        except Exception as inner_e:
+            st.error(f"Error with event loop: {str(inner_e)}")
+            return None
 
 # Initialize session state for user information
 if "user_info_submitted" not in st.session_state:
@@ -20,7 +71,12 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.conversation_history = []
 
-genai.configure(api_key='AIzaSyD1z-CSUfH_ms0DoMSkELL2xvODPVuYMdo')
+# Configure Gemini API with environment variable
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+if not gemini_api_key:
+    st.error("GEMINI_API_KEY not found. Please add it to your .env file.")
+    st.stop()
+genai.configure(api_key=gemini_api_key)
 
 # Define context options
 CONTEXT_OPTIONS = [
@@ -161,5 +217,17 @@ else:
             # If crisis situation, display the message without streaming
             if is_crisis_situation(prompt):
                 st.markdown(response_text)
+            
+            # Add text-to-speech button
+            col1, col2 = st.columns([3, 1])
+            with col2:
+                if st.button("🔊 Read", key=f"tts_{len(st.session_state.messages)}", help="Click to hear the response"):
+                    with st.spinner("Generating audio..."):
+                        audio_bytes = play_tts(response_text)
+                        if audio_bytes:
+                            st.audio(audio_bytes, format="audio/mp3")
+                            st.success("✓ Audio ready to play")
+                        else:
+                            st.warning("Could not generate audio")
         
         st.session_state.messages.append({"role": "assistant", "content": response_text})
