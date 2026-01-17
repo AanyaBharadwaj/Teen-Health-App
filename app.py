@@ -284,19 +284,30 @@ st.markdown(f"""
 # Initialize session state
 def init_session_state():
     """Initialize all session state variables."""
-    if 'initialized' not in st.session_state:
-        st.session_state.initialized = True
+    # Always initialize these variables to prevent persistence across app sessions
+    if 'age_verified' not in st.session_state:
         st.session_state.age_verified = False
+    if 'consent_given' not in st.session_state:
         st.session_state.consent_given = False
+    if 'user_age' not in st.session_state:
         st.session_state.user_age = None
+    if 'user_name' not in st.session_state:
         st.session_state.user_name = "Friend"
+    if 'messages' not in st.session_state:
         st.session_state.messages = []
+    if 'session_start' not in st.session_state:
         st.session_state.session_start = None
+    if 'safety_monitor' not in st.session_state:
         st.session_state.safety_monitor = SafetyMonitor()
+    if 'voice_processor' not in st.session_state:
         st.session_state.voice_processor = VoiceProcessor()
+    if 'crisis_count' not in st.session_state:
         st.session_state.crisis_count = 0
+    if 'message_count' not in st.session_state:
         st.session_state.message_count = 0
+    if 'voice_mode_enabled' not in st.session_state:
         st.session_state.voice_mode_enabled = False
+    if 'voice_mode_type' not in st.session_state:
         st.session_state.voice_mode_type = "text"  # "text", "turn-based", "realtime"
 
 
@@ -332,8 +343,8 @@ def show_age_gate():
 
     with st.form("age_verification"):
         st.subheader("Age Verification")
-        age = st.number_input("How old are you?", min_value=1, max_value=100, value=15)
-        name = st.text_input("What should I call you? (Optional)", value="Friend")
+        age = st.number_input("How old are you?", min_value=13, max_value=20)
+        name = st.text_input("What should I call you? (Optional)")
 
         submitted = st.form_submit_button("Continue")
 
