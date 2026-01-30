@@ -1,0 +1,294 @@
+"""
+TeenMind Real-Time Voice Server
+
+A Pipecat-based real-time conversational AI for teen mental health support.
+Uses Deepgram for STT/TTS and Gemini for responses.
+"""
+
+import asyncio
+import json
+import os
+import sys
+from pathlib import Path
+
+# Add parent directory for config access
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dotenv import load_dotenv
+from loguru import logger
+
+from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.audio.vad.vad_analyzer import VADParams
+from pipecat.frames.frames import (
+    EndFrame,
+    Frame,
+    LLMMessagesFrame,
+    OutputAudioRawFrame,
+    InputAudioRawFrame,
+    StartFrame,
+    TextFrame,
+    TranscriptionFrame,
+)
+from pipecat.pipeline.pipeline import Pipeline
+from pipecat.pipeline.runner import PipelineRunner
+from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
+from pipecat.serializers.base_serializer import FrameSerializer
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.deepgram.tts import DeepgramTTSService
+from pipecat.services.google.llm import GoogleLLMService
+from pipecat.transports.websocket.server import WebsocketServerTransport, WebsocketServerParams
+
+# Load environment variables
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+# Configuration
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+HOST = "localhost"
+PORT = 8765
+
+# System prompt for teen mental health support
+SYSTEM_PROMPT = """You are TeenMind, a supportive and empathetic AI companion for teenagers (ages 13-19).
+
+PERSONALITY:
+- Warm, friendly, and non-judgmental
+- Speak naturally like a supportive older friend
+- Use casual language but stay appropriate
+- Be genuine and authentic
+
+CONVERSATION RULES:
+- Keep responses SHORT (1-3 sentences) - this is voice conversation
+- Use contractions and natural speech patterns
+- Don't use emojis, bullet points, or special characters
+- Don't lecture or be preachy
+- Match the user's energy and tone
+- Ask follow-up questions to show you care
+
+SAFETY:
+- If someone mentions self-harm, suicide, or abuse, be supportive and gently encourage them to talk to a trusted adult or call 988 (Suicide & Crisis Lifeline)
+- Never dismiss their feelings
+- You're a companion, not a replacement for professional help
+
+Start by warmly greeting the user and asking how they're doing today."""
+
+
+def build_system_prompt(name, mood, topic=None):
+    """Generate a personalized system prompt based on user metadata."""
+    mood_context = {
+        "great": f"{name} is feeling great today. Match their positive energy.",
+        "good": f"{name} is feeling good. Be warm and upbeat.",
+        "okay": f"{name} is feeling okay — might have something on their mind. Be gentle and curious.",
+        "not great": f"{name} is not feeling great. Be extra gentle, empathetic, and supportive.",
+        "struggling": f"{name} is struggling right now. Be very gentle and validating. Let them know you're really glad they're here.",
+    }
+
+    topic_line = ""
+    if topic and topic != "Just talk":
+        topic_line = f"\n- They'd like to talk about: {topic}. Gently bring this up after greeting them."
+
+    greeting_style = {
+        "great": f"Greet {name} by name with matching positive energy.",
+        "good": f"Warmly greet {name} by name.",
+        "okay": f"Gently greet {name} by name and let them know you're here.",
+        "not great": f"Gently greet {name} by name and let them know this is a safe space.",
+        "struggling": f"Gently greet {name} by name and tell them you're really glad they're here.",
+    }
+
+    return f"""You are TeenMind, a supportive and empathetic AI companion for teenagers (ages 13-19).
+
+PERSONALITY:
+- Warm, friendly, and non-judgmental
+- Speak naturally like a supportive older friend
+- Use casual language but stay appropriate
+- Be genuine and authentic
+
+ABOUT THIS USER:
+- Their name is {name}
+- {mood_context.get(mood, mood_context["okay"])}{topic_line}
+
+CONVERSATION RULES:
+- Keep responses SHORT (1-3 sentences) - this is voice conversation
+- Use contractions and natural speech patterns
+- Don't use emojis, bullet points, or special characters
+- Don't lecture or be preachy
+- Match the user's energy and tone
+- Ask follow-up questions to show you care
+- Use their name occasionally to make it personal
+
+SAFETY:
+- If someone mentions self-harm, suicide, or abuse, be supportive and gently encourage them to talk to a trusted adult or call 988 (Suicide & Crisis Lifeline)
+- Never dismiss their feelings
+- You're a companion, not a replacement for professional help
+
+{greeting_style.get(mood, greeting_style["okay"])}"""
+
+
+class RawAudioSerializer(FrameSerializer):
+    """Serializer that handles raw audio bytes, JSON control messages, and user metadata."""
+
+    def __init__(self):
+        super().__init__()
+        self._metadata_event = asyncio.Event()
+        self._metadata = {}
+
+    async def serialize(self, frame: Frame) -> str | bytes | None:
+        if isinstance(frame, OutputAudioRawFrame):
+            return frame.audio
+        elif isinstance(frame, TextFrame):
+            return json.dumps({"type": "text", "text": frame.text})
+        elif isinstance(frame, TranscriptionFrame):
+            return json.dumps({"type": "transcription", "text": frame.text})
+        return None
+
+    async def deserialize(self, data: str | bytes) -> Frame | None:
+        if isinstance(data, bytes):
+            return InputAudioRawFrame(audio=data, sample_rate=16000, num_channels=1)
+        elif isinstance(data, str):
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "user_metadata":
+                    self._metadata = msg
+                    self._metadata_event.set()
+                    logger.info(f"Received metadata: name={msg.get('name')}, mood={msg.get('mood')}, topic={msg.get('topic')}")
+                    return None
+            except json.JSONDecodeError:
+                pass
+        return None
+
+    async def wait_for_metadata(self):
+        """Wait for client to send user metadata. Returns the metadata dict."""
+        await self._metadata_event.wait()
+        return self._metadata
+
+
+async def run_session():
+    """Run a single conversation session."""
+
+    # Create serializer instance so we can access metadata
+    serializer = RawAudioSerializer()
+
+    # Create transport with WebSocket
+    transport = WebsocketServerTransport(
+        params=WebsocketServerParams(
+            audio_in_enabled=True,
+            audio_out_enabled=True,
+            audio_out_sample_rate=16000,
+            audio_in_sample_rate=16000,
+            vad_enabled=True,
+            vad_analyzer=SileroVADAnalyzer(
+                params=VADParams(stop_secs=0.5)
+            ),
+            transcription_enabled=False,
+            serializer=serializer,
+        ),
+        host=HOST,
+        port=PORT,
+    )
+
+    # Initialize services
+    stt = DeepgramSTTService(
+        api_key=DEEPGRAM_API_KEY,
+        model="nova-2",
+    )
+
+    tts = DeepgramTTSService(
+        api_key=DEEPGRAM_API_KEY,
+        voice="aura-asteria-en",
+        sample_rate=16000,
+    )
+
+    llm = GoogleLLMService(
+        api_key=GEMINI_API_KEY,
+        model="gemini-2.5-flash",
+    )
+
+    # Set up conversation context
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+    ]
+
+    context = OpenAILLMContext(messages)
+    context_aggregator = llm.create_context_aggregator(context)
+
+    # Build the pipeline
+    pipeline = Pipeline([
+        transport.input(),
+        stt,
+        context_aggregator.user(),
+        llm,
+        tts,
+        transport.output(),
+        context_aggregator.assistant(),
+    ])
+
+    # Create task
+    task = PipelineTask(
+        pipeline,
+        params=PipelineParams(
+            allow_interruptions=True,
+            enable_metrics=True,
+        ),
+    )
+
+    # Event handlers
+    @transport.event_handler("on_client_connected")
+    async def on_client_connected(transport, client):
+        logger.info(f"Client connected: {client}")
+
+        async def wait_and_greet():
+            try:
+                metadata = await asyncio.wait_for(
+                    serializer.wait_for_metadata(), timeout=10.0
+                )
+                name = metadata.get("name", "there")
+                mood = metadata.get("mood", "okay")
+                topic = metadata.get("topic")
+                prompt = build_system_prompt(name, mood, topic)
+                messages[0] = {"role": "system", "content": prompt}
+                logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic})")
+            except asyncio.TimeoutError:
+                logger.warning("Metadata timeout — using default prompt")
+            await task.queue_frames([LLMMessagesFrame(messages)])
+
+        asyncio.create_task(wait_and_greet())
+
+    @transport.event_handler("on_client_disconnected")
+    async def on_client_disconnected(transport, client):
+        logger.info(f"Client disconnected: {client}")
+        await task.queue_frame(EndFrame())
+
+    # Run the pipeline
+    runner = PipelineRunner()
+    await runner.run(task)
+
+
+async def main():
+    """Main entry point - runs sessions in a loop."""
+
+    # Validate API keys
+    if not DEEPGRAM_API_KEY:
+        logger.error("DEEPGRAM_API_KEY not set in .env file")
+        sys.exit(1)
+
+    if not GEMINI_API_KEY:
+        logger.error("GEMINI_API_KEY not set in .env file")
+        sys.exit(1)
+
+    logger.info(f"Starting TeenMind Real-Time Voice Server on ws://{HOST}:{PORT}")
+    logger.info("Open frontend/index.html in your browser to start talking")
+
+    # Run sessions in a loop - restart after each client disconnects
+    while True:
+        try:
+            logger.info("Waiting for client connection...")
+            await run_session()
+            logger.info("Session ended, restarting server...")
+            await asyncio.sleep(1)
+        except Exception as e:
+            logger.error(f"Session error: {e}")
+            await asyncio.sleep(2)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
