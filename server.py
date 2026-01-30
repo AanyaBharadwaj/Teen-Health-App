@@ -11,8 +11,8 @@ import os
 import sys
 from pathlib import Path
 
-# Add parent directory for config access
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add project directory to path
+sys.path.insert(0, str(Path(__file__).parent))
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -40,7 +40,7 @@ from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.websocket.server import WebsocketServerTransport, WebsocketServerParams
 
 # Load environment variables
-load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).parent / ".env")
 
 # Configuration
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
