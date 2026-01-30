@@ -22,6 +22,36 @@
             overflow-x: hidden;
         }
 
+        /* Ambient background glow */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::before {
+            top: -15%;
+            right: -10%;
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(110, 231, 183, 0.07) 0%, transparent 70%);
+            animation: drift 12s ease-in-out infinite;
+        }
+        body::after {
+            bottom: -10%;
+            left: -15%;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+            animation: drift 15s ease-in-out infinite reverse;
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 20px); }
+        }
+
         /* ===== App Container ===== */
         #app {
             position: relative;
@@ -114,13 +144,14 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
             padding: 32px 24px;
             backdrop-filter: blur(20px);
             width: 100%;
             max-width: 420px;
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.15);
         }
 
         .btn {
@@ -142,12 +173,16 @@
         .btn-green {
             background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
             color: white;
-            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+            box-shadow: 0 4px 24px rgba(34, 197, 94, 0.25);
         }
 
         .btn-green:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(34, 197, 94, 0.4);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-green:active:not(:disabled) {
+            transform: translateY(0) scale(0.99);
         }
 
         .btn-red {
@@ -190,42 +225,73 @@
         }
 
         /* ===== Screen 1: Welcome ===== */
-        #screen-welcome .welcome-emojis {
+        .welcome-hero {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin-bottom: 36px;
             display: flex;
-            gap: 16px;
-            margin-bottom: 32px;
-            font-size: 2.5rem;
+            align-items: center;
+            justify-content: center;
         }
 
-        #screen-welcome .welcome-emojis span {
-            display: inline-block;
-            animation: floatEmoji 3s ease-in-out infinite;
+        .welcome-glow {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(110, 231, 183, 0.18) 0%, rgba(59, 130, 246, 0.06) 50%, transparent 70%);
+            animation: glow-breathe 4s ease-in-out infinite;
         }
 
-        #screen-welcome .welcome-emojis span:nth-child(1) { animation-delay: 0s; }
-        #screen-welcome .welcome-emojis span:nth-child(2) { animation-delay: 0.4s; }
-        #screen-welcome .welcome-emojis span:nth-child(3) { animation-delay: 0.8s; }
-        #screen-welcome .welcome-emojis span:nth-child(4) { animation-delay: 1.2s; }
+        @keyframes glow-breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .hero-emoji {
+            position: absolute;
+            font-size: 1.8rem;
+            animation: floatEmoji 5s ease-in-out infinite;
+        }
+
+        .hero-emoji.e1 { top: 8%;  left: 10%;  animation-delay: 0s; }
+        .hero-emoji.e2 { top: 5%;  right: 12%; animation-delay: 0.8s; }
+        .hero-emoji.e3 { font-size: 3rem; position: relative; animation: none; filter: drop-shadow(0 0 20px rgba(110, 231, 183, 0.3)); }
+        .hero-emoji.e4 { bottom: 8%; left: 5%;  animation-delay: 1.6s; }
+        .hero-emoji.e5 { bottom: 12%; right: 8%; animation-delay: 0.4s; }
 
         @keyframes floatEmoji {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-14px); }
+            50% { transform: translateY(-12px); }
         }
 
         #screen-welcome .logo {
-            font-size: 2.8rem;
-            margin-bottom: 12px;
+            font-size: 3rem;
+            margin-bottom: 6px;
+        }
+
+        .welcome-sub {
+            font-size: 1.05rem;
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 400;
+            margin-bottom: 16px;
+            letter-spacing: 0.3px;
         }
 
         #screen-welcome .tagline {
             font-size: 1rem;
-            margin-bottom: 48px;
+            margin-bottom: 44px;
             max-width: 280px;
-            line-height: 1.5;
+            line-height: 1.7;
+            text-align: center;
         }
 
         #screen-welcome .btn {
-            max-width: 280px;
+            max-width: 300px;
+            padding: 18px 24px;
+            font-size: 1.05rem;
+            border-radius: 16px;
         }
 
         /* ===== Screen 2: Profile ===== */
@@ -237,11 +303,18 @@
         #screen-profile h2 {
             font-size: 1.6rem;
             font-weight: 700;
-            margin-bottom: 32px;
+            margin-bottom: 8px;
             background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .screen-sub {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 32px;
+            line-height: 1.5;
         }
 
         .form-section {
@@ -335,44 +408,52 @@
             box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
         }
 
-        /* Mood buttons */
+        /* Mood buttons — horizontal emoji grid */
         .mood-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
             width: 100%;
         }
 
         .mood-btn {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
-            padding: 14px 18px;
-            border-radius: 14px;
+            gap: 6px;
+            padding: 14px 10px;
+            border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.03);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.55);
             font-family: inherit;
             cursor: pointer;
             transition: all 0.2s ease;
-            text-align: left;
+            min-width: 68px;
         }
 
         .mood-btn:hover {
             border-color: rgba(34, 197, 94, 0.3);
             background: rgba(34, 197, 94, 0.06);
+            transform: translateY(-2px);
         }
 
         .mood-btn.selected {
             border-color: #22c55e;
             background: rgba(34, 197, 94, 0.12);
-            color: #fff;
+            color: #6ee7b7;
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.12);
         }
 
         .mood-btn .mood-emoji {
-            font-size: 1.4rem;
-            flex-shrink: 0;
+            font-size: 1.7rem;
+        }
+
+        .mood-btn .mood-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
         }
 
         #screen-profile .btn {
@@ -389,7 +470,7 @@
         #screen-disclaimer h2 {
             font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 24px;
+            margin-bottom: 8px;
         }
 
         .disclaimer-card {
@@ -472,11 +553,12 @@
 
         /* ===== Screen 4: Greeting ===== */
         .greeting-wave {
-            font-size: 4rem;
+            font-size: 5rem;
             display: inline-block;
             animation: wave 1s ease-in-out infinite;
             transform-origin: 70% 70%;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 0 24px rgba(110, 231, 183, 0.2));
         }
 
         @keyframes wave {
@@ -490,18 +572,23 @@
         }
 
         .greeting-text {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 12px;
-            min-height: 2.2rem;
+            margin-bottom: 14px;
+            min-height: 2.4rem;
+            background: linear-gradient(135deg, #fff 0%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .greeting-subtitle {
-            font-size: 1.05rem;
-            color: rgba(255, 255, 255, 0.55);
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.6);
             min-height: 1.4rem;
-            line-height: 1.5;
+            line-height: 1.6;
             max-width: 320px;
+            transition: opacity 0.5s ease;
         }
 
         .typing-cursor {
@@ -811,28 +898,35 @@
 
         /* ===== Screen 6: Goodbye ===== */
         .goodbye-emoji {
-            font-size: 4rem;
-            margin-bottom: 24px;
+            font-size: 4.5rem;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 0 20px rgba(110, 231, 183, 0.2));
         }
 
         .goodbye-title {
             font-size: 1.6rem;
             font-weight: 700;
             margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .goodbye-subtitle {
-            font-size: 1rem;
+            font-size: 1.05rem;
             color: rgba(255, 255, 255, 0.55);
             margin-bottom: 40px;
-            line-height: 1.5;
+            line-height: 1.6;
             max-width: 300px;
             text-align: center;
         }
 
         #screen-goodbye .btn {
-            max-width: 280px;
+            max-width: 300px;
             margin-bottom: 24px;
+            padding: 18px 24px;
+            border-radius: 16px;
         }
 
         /* ===== Responsive ===== */
@@ -872,14 +966,17 @@
 
         <!-- Screen 1: Welcome -->
         <section class="screen active" id="screen-welcome" aria-label="Welcome">
-            <div class="welcome-emojis" aria-hidden="true">
-                <span>&#x1F4AC;</span>
-                <span>&#x1F331;</span>
-                <span>&#x2728;</span>
-                <span>&#x1F499;</span>
+            <div class="welcome-hero" aria-hidden="true">
+                <div class="welcome-glow"></div>
+                <span class="hero-emoji e1">💬</span>
+                <span class="hero-emoji e2">🌱</span>
+                <span class="hero-emoji e3">🧠</span>
+                <span class="hero-emoji e4">✨</span>
+                <span class="hero-emoji e5">💙</span>
             </div>
             <h1 class="logo">TeenMind</h1>
-            <p class="tagline">A safe space to talk. Always here, always listening.</p>
+            <p class="welcome-sub">Your voice companion</p>
+            <p class="tagline">A safe space to talk.<br>Always here, always listening.</p>
             <button class="btn btn-green" id="btnGetStarted" aria-label="Get started with TeenMind">
                 Get Started
             </button>
@@ -888,6 +985,7 @@
         <!-- Screen 2: Profile Setup -->
         <section class="screen" id="screen-profile" aria-label="Profile setup">
             <h2>Let's get to know you</h2>
+            <p class="screen-sub">Just a few things so I can be the best companion for you.</p>
 
             <div class="form-section">
                 <div class="input-wrapper">
@@ -913,19 +1011,24 @@
                 <span class="form-label">How are you feeling today?</span>
                 <div class="mood-buttons" id="moodButtons" role="group" aria-label="Select your mood">
                     <button class="mood-btn" data-mood="great" aria-label="Feeling great">
-                        <span class="mood-emoji">&#x1F60A;</span> Great
+                        <span class="mood-emoji">😊</span>
+                        <span class="mood-label">Great</span>
                     </button>
                     <button class="mood-btn" data-mood="good" aria-label="Feeling good">
-                        <span class="mood-emoji">&#x1F642;</span> Good
+                        <span class="mood-emoji">🙂</span>
+                        <span class="mood-label">Good</span>
                     </button>
                     <button class="mood-btn" data-mood="okay" aria-label="Feeling okay">
-                        <span class="mood-emoji">&#x1F610;</span> Okay
+                        <span class="mood-emoji">😐</span>
+                        <span class="mood-label">Okay</span>
                     </button>
                     <button class="mood-btn" data-mood="not great" aria-label="Not feeling great">
-                        <span class="mood-emoji">&#x1F614;</span> Not great
+                        <span class="mood-emoji">😔</span>
+                        <span class="mood-label">Meh</span>
                     </button>
                     <button class="mood-btn" data-mood="struggling" aria-label="Struggling">
-                        <span class="mood-emoji">&#x1F622;</span> Struggling
+                        <span class="mood-emoji">😢</span>
+                        <span class="mood-label">Rough</span>
                     </button>
                 </div>
             </div>
@@ -938,19 +1041,20 @@
         <!-- Screen 3: Disclaimer -->
         <section class="screen" id="screen-disclaimer" aria-label="Disclaimer and consent">
             <h2>Before we start</h2>
+            <p class="screen-sub">A quick note about what to expect.</p>
 
             <div class="card disclaimer-card">
                 <div class="disclaimer-section">
-                    <h3>What TeenMind Is</h3>
-                    <p>A supportive AI companion designed to listen, provide encouragement, and help you explore your thoughts and feelings.</p>
+                    <h3>🤝 What TeenMind Is</h3>
+                    <p>A supportive AI companion designed to listen, encourage you, and help you explore your thoughts and feelings.</p>
                 </div>
                 <div class="disclaimer-section">
-                    <h3>What TeenMind Is Not</h3>
-                    <p>Not a therapist, counselor, or medical professional. If you're in crisis or need professional help, please reach out to a trusted adult or call 988.</p>
+                    <h3>🚫 What TeenMind Is Not</h3>
+                    <p>Not a therapist or medical professional. If you're in crisis, please reach out to a trusted adult or call 988.</p>
                 </div>
                 <div class="disclaimer-section">
-                    <h3>Your Privacy</h3>
-                    <p>Your conversations are not stored or shared. What you say here stays here.</p>
+                    <h3>🔒 Your Privacy</h3>
+                    <p>Your conversations are not stored or shared. What you say here, stays here.</p>
                 </div>
             </div>
 
