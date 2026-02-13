@@ -1,11 +1,8 @@
 services:
   - type: web
     name: teenmind
-    runtime: python
-    pythonVersion: 3.11
+    runtime: docker
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python cloud_server.py"
     envVars:
       - key: DEEPGRAM_API_KEY
         sync: false
@@ -13,5 +10,3 @@ services:
         sync: false
       - key: PORT
         value: 10000
-      - key: PYTHON_VERSION
-        value: 3.11
