@@ -52,6 +52,129 @@
             50% { transform: translate(30px, 20px); }
         }
 
+        /* ===== Floating Bubbles Background ===== */
+        .bubble-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            opacity: 0.6;
+            filter: blur(0.5px);
+        }
+
+        .bubble:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 10%;
+            left: 5%;
+            animation: float1 20s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(110, 231, 183, 0.12), rgba(110, 231, 183, 0.01));
+            border-color: rgba(110, 231, 183, 0.1);
+        }
+
+        .bubble:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            right: 10%;
+            animation: float2 25s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.01));
+            border-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .bubble:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            bottom: 15%;
+            left: 15%;
+            animation: float3 22s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.01));
+            border-color: rgba(168, 85, 247, 0.1);
+        }
+
+        .bubble:nth-child(4) {
+            width: 90px;
+            height: 90px;
+            top: 50%;
+            right: 8%;
+            animation: float4 28s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.01));
+            border-color: rgba(236, 72, 153, 0.1);
+        }
+
+        .bubble:nth-child(5) {
+            width: 70px;
+            height: 70px;
+            top: 70%;
+            left: 10%;
+            animation: float5 24s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.01));
+            border-color: rgba(34, 197, 94, 0.1);
+        }
+
+        .bubble:nth-child(6) {
+            width: 60px;
+            height: 60px;
+            bottom: 25%;
+            right: 20%;
+            animation: float6 26s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(250, 204, 21, 0.1), rgba(250, 204, 21, 0.01));
+            border-color: rgba(250, 204, 21, 0.1);
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(30px, -40px); }
+            50% { transform: translate(-20px, -80px); }
+            75% { transform: translate(40px, -30px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-40px, 50px); }
+            50% { transform: translate(20px, 80px); }
+            75% { transform: translate(-30px, 40px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, -50px); }
+            50% { transform: translate(-30px, 30px); }
+            75% { transform: translate(25px, -70px); }
+        }
+
+        @keyframes float4 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-35px, -60px); }
+            50% { transform: translate(45px, 40px); }
+            75% { transform: translate(-20px, 70px); }
+        }
+
+        @keyframes float5 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(40px, 35px); }
+            50% { transform: translate(-50px, -45px); }
+            75% { transform: translate(30px, 50px); }
+        }
+
+        @keyframes float6 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-45px, 40px); }
+            50% { transform: translate(35px, -55px); }
+            75% { transform: translate(-25px, -40px); }
+        }
+
         /* ===== App Container ===== */
         #app {
             position: relative;
@@ -59,6 +182,7 @@
             max-width: 480px;
             margin: 0 auto;
             min-height: 100vh;
+            z-index: 2;
         }
 
         /* ===== Progress Dots ===== */
@@ -956,6 +1080,16 @@
     </style>
 </head>
 <body>
+    <!-- Floating Bubbles Background -->
+    <div class="bubble-container">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+    
     <div id="app">
         <!-- Progress Dots (visible screens 1-3) -->
         <div class="progress-dots" id="progressDots" aria-label="Onboarding progress">

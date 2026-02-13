@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from dotenv import load_dotenv
 from loguru import logger
+from aiohttp import web
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
@@ -303,17 +304,54 @@ async def main():
         sys.exit(1)
 
     logger.info(f"Starting TeenMind Real-Time Voice Server on ws://{HOST}:{PORT}")
-    logger.info("Open frontend/index.html in your browser to start talking")
+    logger.info(f"Open http://localhost:8764 in your browser to start talking")
 
-    # Run sessions in a loop - restart after each client disconnects
+    # Start HTTP server
+    await create_http_server()
+    
+    # This line will never be reached because create_http_server() runs indefinitely
+    # But we'll keep it as a safety measure
+
+
+async def create_http_server():
+    """Create HTTP server to serve static files and run WebSocket in parallel."""
+    app = web.Application()
+    frontend_path = Path(__file__).parent / "frontend"
+    
+    # Serve index.html for root path
+    async def index_handler(request):
+        return web.FileResponse(frontend_path / "index.html")
+    
+    app.router.add_get('/', index_handler)
+    
+    # Serve all other static files
+    app.router.add_static('/', path=frontend_path, name='static')
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Use a different port for HTTP
+    http_port = 8764
+    site = web.TCPSite(runner, HOST, http_port)
+    await site.start()
+    logger.info(f"HTTP server started on http://{HOST}:{http_port}")
+    
+    # Start WebSocket sessions in parallel
+    ws_task = asyncio.create_task(run_websocket_sessions())
+    
+    # Keep the HTTP server running
+    await asyncio.Event().wait()
+
+
+async def run_websocket_sessions():
+    """Run WebSocket sessions in a loop."""
     while True:
         try:
-            logger.info("Waiting for client connection...")
+            logger.info("Waiting for WebSocket client connection...")
             await run_session()
-            logger.info("Session ended, restarting server...")
+            logger.info("WebSocket session ended, restarting...")
             await asyncio.sleep(1)
         except Exception as e:
-            logger.error(f"Session error: {e}")
+            logger.error(f"WebSocket session error: {e}")
             await asyncio.sleep(2)
 
 
