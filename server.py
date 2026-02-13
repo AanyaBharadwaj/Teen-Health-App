@@ -45,8 +45,8 @@ load_dotenv(Path(__file__).parent / ".env")
 # Configuration
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-HOST = "localhost"
-PORT = 8765
+HOST = "0.0.0.0"
+PORT = int(os.getenv("PORT", "8765"))
 
 # System prompt for teen mental health support
 SYSTEM_PROMPT = """You are TeenMind, a supportive and empathetic AI companion for teenagers (ages 13-19).
@@ -162,29 +162,17 @@ class RawAudioSerializer(FrameSerializer):
         return self._metadata
 
 
-async def run_session():
-    """Run a single conversation session."""
+async def run_bot(transport, user_metadata=None, serializer=None):
+    """Shared pipeline logic used by both local WebSocket and PCC cloud modes.
 
-    # Create serializer instance so we can access metadata
-    serializer = RawAudioSerializer()
-
-    # Create transport with WebSocket
-    transport = WebsocketServerTransport(
-        params=WebsocketServerParams(
-            audio_in_enabled=True,
-            audio_out_enabled=True,
-            audio_out_sample_rate=16000,
-            audio_in_sample_rate=16000,
-            vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer(
-                params=VADParams(stop_secs=0.5)
-            ),
-            transcription_enabled=False,
-            serializer=serializer,
-        ),
-        host=HOST,
-        port=PORT,
-    )
+    Args:
+        transport: A Pipecat transport (WebsocketServerTransport or SmallWebRTCTransport).
+        user_metadata: Optional dict with keys name, mood, topic. When provided
+            (cloud mode), the system prompt is personalized immediately. When None
+            (local mode), the server waits for a JSON metadata message from the client.
+        serializer: RawAudioSerializer instance (local mode only) used to receive
+            metadata from the WebSocket client.
+    """
 
     # Initialize services
     stt = DeepgramSTTService(
@@ -203,10 +191,17 @@ async def run_session():
         model="gemini-2.5-flash",
     )
 
-    # Set up conversation context
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-    ]
+    # Build personalized or default system prompt
+    if user_metadata:
+        name = user_metadata.get("name", "there")
+        mood = user_metadata.get("mood", "okay")
+        topic = user_metadata.get("topic")
+        prompt = build_system_prompt(name, mood, topic)
+        logger.info(f"Cloud mode: personalized prompt for {name} (mood: {mood}, topic: {topic})")
+    else:
+        prompt = SYSTEM_PROMPT
+
+    messages = [{"role": "system", "content": prompt}]
 
     context = OpenAILLMContext(messages)
     context_aggregator = llm.create_context_aggregator(context)
@@ -233,34 +228,66 @@ async def run_session():
 
     # Event handlers
     @transport.event_handler("on_client_connected")
-    async def on_client_connected(transport, client):
+    async def on_client_connected(transport_ref, client):
         logger.info(f"Client connected: {client}")
 
-        async def wait_and_greet():
-            try:
-                metadata = await asyncio.wait_for(
-                    serializer.wait_for_metadata(), timeout=10.0
-                )
-                name = metadata.get("name", "there")
-                mood = metadata.get("mood", "okay")
-                topic = metadata.get("topic")
-                prompt = build_system_prompt(name, mood, topic)
-                messages[0] = {"role": "system", "content": prompt}
-                logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic})")
-            except asyncio.TimeoutError:
-                logger.warning("Metadata timeout — using default prompt")
+        if user_metadata:
+            # Cloud mode — prompt already personalized, just kick off the LLM
             await task.queue_frames([LLMMessagesFrame(messages)])
+        else:
+            # Local mode — wait for metadata JSON from the WebSocket client
+            async def wait_and_greet():
+                try:
+                    metadata = await asyncio.wait_for(
+                        serializer.wait_for_metadata(), timeout=10.0
+                    )
+                    name = metadata.get("name", "there")
+                    mood = metadata.get("mood", "okay")
+                    topic = metadata.get("topic")
+                    personalized = build_system_prompt(name, mood, topic)
+                    messages[0] = {"role": "system", "content": personalized}
+                    logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic})")
+                except asyncio.TimeoutError:
+                    logger.warning("Metadata timeout — using default prompt")
+                await task.queue_frames([LLMMessagesFrame(messages)])
 
-        asyncio.create_task(wait_and_greet())
+            asyncio.create_task(wait_and_greet())
 
     @transport.event_handler("on_client_disconnected")
-    async def on_client_disconnected(transport, client):
+    async def on_client_disconnected(transport_ref, client):
         logger.info(f"Client disconnected: {client}")
         await task.queue_frame(EndFrame())
 
     # Run the pipeline
     runner = PipelineRunner()
     await runner.run(task)
+
+
+async def run_session():
+    """Run a single local WebSocket conversation session."""
+
+    # Create serializer instance so we can access metadata
+    serializer = RawAudioSerializer()
+
+    # Create transport with WebSocket
+    transport = WebsocketServerTransport(
+        params=WebsocketServerParams(
+            audio_in_enabled=True,
+            audio_out_enabled=True,
+            audio_out_sample_rate=16000,
+            audio_in_sample_rate=16000,
+            vad_enabled=True,
+            vad_analyzer=SileroVADAnalyzer(
+                params=VADParams(stop_secs=0.5)
+            ),
+            transcription_enabled=False,
+            serializer=serializer,
+        ),
+        host=HOST,
+        port=PORT,
+    )
+
+    await run_bot(transport, user_metadata=None, serializer=serializer)
 
 
 async def main():

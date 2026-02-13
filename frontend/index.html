@@ -1156,7 +1156,17 @@
         // =====================================================================
         // Configuration
         // =====================================================================
-        const WEBSOCKET_URL = 'ws://localhost:8765';
+        // Set to "local" for local dev, or "cloud" for Render deployment.
+        const DEPLOY_MODE = 'local'; // 'local' | 'cloud'
+
+        // Local mode: raw WebSocket to localhost
+        const LOCAL_WS_URL = 'ws://localhost:8765';
+
+        // Cloud mode: wss:// to your Render service URL
+        const CLOUD_WS_URL = ''; // e.g. 'wss://teenmind.onrender.com'
+
+        const WEBSOCKET_URL = DEPLOY_MODE === 'cloud' ? CLOUD_WS_URL : LOCAL_WS_URL;
+
         const SAMPLE_RATE = 16000;
         const FRAME_SIZE = 512;
 
@@ -1524,7 +1534,7 @@
         }
 
         // =====================================================================
-        // Connection Handling (modified to send metadata first)
+        // Connection Handling (WebSocket — works for both local and Render)
         // =====================================================================
         async function connect() {
             if (websocket && websocket.readyState === WebSocket.CONNECTING) return;
@@ -1709,7 +1719,7 @@
         }
 
         // =====================================================================
-        // Disconnect (modified: just cleans up audio/WS, no UI changes)
+        // Disconnect — cleans up WebSocket + audio
         // =====================================================================
         function disconnect() {
             isConnected = false;
