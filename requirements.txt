@@ -11,3 +11,6 @@ loguru>=0.7.0
 
 # Cloud deployment (HTTP + WebSocket proxy)
 aiohttp>=3.9.0
+
+# Pin numba to compatible version
+numba>=0.59.0,<0.62.0
