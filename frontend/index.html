@@ -1157,13 +1157,13 @@
         // Configuration
         // =====================================================================
         // Set to "local" for local dev, or "cloud" for Render deployment.
-        const DEPLOY_MODE = 'local'; // 'local' | 'cloud'
+        const DEPLOY_MODE = 'cloud'; // 'local' | 'cloud'
 
         // Local mode: raw WebSocket to localhost
         const LOCAL_WS_URL = 'ws://localhost:8765';
 
         // Cloud mode: wss:// to your Render service URL + /ws path
-        const CLOUD_WS_URL = ''; // e.g. 'wss://teenmind.onrender.com/ws'
+        const CLOUD_WS_URL = 'wss://teen-mind.onrender.com/ws';
 
         const WEBSOCKET_URL = DEPLOY_MODE === 'cloud' ? CLOUD_WS_URL : LOCAL_WS_URL;
 
