@@ -37,7 +37,7 @@ echo "================================"
 echo ""
 
 # Start frontend server in background
-python3 -m http.server 8080 --directory frontend &
+python3 -m http.server 8080 --directory docs &
 FRONTEND_PID=$!
 
 # Start voice server in foreground

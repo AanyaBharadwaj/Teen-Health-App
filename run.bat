@@ -37,7 +37,7 @@ echo ================================
 echo.
 
 :: Start frontend server in background
-start /b python -m http.server 8080 --directory frontend
+start /b python -m http.server 8080 --directory docs
 
 :: Start voice server in foreground
 python server.py
