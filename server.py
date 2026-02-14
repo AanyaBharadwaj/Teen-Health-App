@@ -175,15 +175,22 @@ async def run_bot(transport, user_metadata=None, serializer=None):
             metadata from the WebSocket client.
     """
 
+    # Voice selection — map preference to Deepgram Aura voices
+    VOICE_MAP = {
+        "female": "aura-asteria-en",
+        "male": "aura-orion-en",
+    }
+
     # Initialize services
     stt = DeepgramSTTService(
         api_key=DEEPGRAM_API_KEY,
         model="nova-2",
     )
 
+    voice_pref = (user_metadata or {}).get("voice", "female")
     tts = DeepgramTTSService(
         api_key=DEEPGRAM_API_KEY,
-        voice="aura-asteria-en",
+        voice=VOICE_MAP.get(voice_pref, VOICE_MAP["female"]),
         sample_rate=16000,
     )
 
@@ -198,7 +205,7 @@ async def run_bot(transport, user_metadata=None, serializer=None):
         mood = user_metadata.get("mood", "okay")
         topic = user_metadata.get("topic")
         prompt = build_system_prompt(name, mood, topic)
-        logger.info(f"Cloud mode: personalized prompt for {name} (mood: {mood}, topic: {topic})")
+        logger.info(f"Cloud mode: personalized prompt for {name} (mood: {mood}, topic: {topic}, voice: {voice_pref})")
     else:
         prompt = SYSTEM_PROMPT
 
@@ -245,9 +252,11 @@ async def run_bot(transport, user_metadata=None, serializer=None):
                     name = metadata.get("name", "there")
                     mood = metadata.get("mood", "okay")
                     topic = metadata.get("topic")
+                    voice = metadata.get("voice", "female")
                     personalized = build_system_prompt(name, mood, topic)
                     messages[0] = {"role": "system", "content": personalized}
-                    logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic})")
+                    tts.set_voice(VOICE_MAP.get(voice, VOICE_MAP["female"]))
+                    logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic}, voice: {voice})")
                 except asyncio.TimeoutError:
                     logger.warning("Metadata timeout — using default prompt")
                 await task.queue_frames([LLMMessagesFrame(messages)])

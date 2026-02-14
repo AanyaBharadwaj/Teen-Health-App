@@ -1167,6 +1167,20 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <span class="form-label">Choose a voice</span>
+                <div class="mood-buttons" id="voiceButtons" role="group" aria-label="Select voice">
+                    <button class="mood-btn" data-voice="female" aria-label="Female voice">
+                        <span class="mood-emoji">👩</span>
+                        <span class="mood-label">Female</span>
+                    </button>
+                    <button class="mood-btn" data-voice="male" aria-label="Male voice">
+                        <span class="mood-emoji">👨</span>
+                        <span class="mood-label">Male</span>
+                    </button>
+                </div>
+            </div>
+
             <button class="btn btn-green" id="btnContinueProfile" disabled aria-label="Continue to next step">
                 Continue
             </button>
@@ -1311,7 +1325,8 @@
             name: '',
             age: null,
             mood: '',
-            topic: null
+            topic: null,
+            voice: 'female'
         };
 
         // =====================================================================
@@ -1456,6 +1471,16 @@
             btn.classList.add('selected');
             AppState.mood = btn.dataset.mood;
             validateProfile();
+        });
+
+        const voiceButtons = document.getElementById('voiceButtons');
+        voiceButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.mood-btn');
+            if (!btn) return;
+
+            voiceButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            AppState.voice = btn.dataset.voice;
         });
 
         function validateProfile() {
@@ -1618,9 +1643,11 @@
             AppState.age = null;
             AppState.mood = '';
             AppState.topic = null;
+            AppState.voice = 'female';
 
             // Reset form elements
             inputName.value = '';
+            voiceButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             agePills.querySelectorAll('.age-pill').forEach(p => p.classList.remove('selected'));
             moodButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             btnContinueProfile.disabled = true;
@@ -1689,7 +1716,8 @@
                         name: AppState.name,
                         age: AppState.age,
                         mood: AppState.mood,
-                        topic: AppState.topic
+                        topic: AppState.topic,
+                        voice: AppState.voice
                     };
                     websocket.send(JSON.stringify(metadata));
                     console.log('Sent user metadata:', metadata);
