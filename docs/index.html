@@ -1661,7 +1661,8 @@
 
             const div = document.createElement('div');
             div.className = 'message ' + role;
-            div.innerHTML = '<div class="message-label">' + (role === 'user' ? 'You' : 'TeenMind') + '</div>' +
+            const displayName = role === 'user' ? (AppState.name || 'You') : 'TeenMind';
+            div.innerHTML = '<div class="message-label">' + displayName + '</div>' +
                 '<div class="message-text">' + text + '</div>';
             transcript.appendChild(div);
             transcriptCard.scrollTop = transcriptCard.scrollHeight;

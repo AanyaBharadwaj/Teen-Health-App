@@ -281,7 +281,7 @@ async def run_session():
             vad_analyzer=SileroVADAnalyzer(
                 params=VADParams(stop_secs=0.5)
             ),
-            transcription_enabled=False,
+            transcription_enabled=True,
             serializer=serializer,
         ),
         host=HOST,
