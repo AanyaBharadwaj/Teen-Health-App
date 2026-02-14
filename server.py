@@ -316,7 +316,7 @@ async def main():
 async def create_http_server():
     """Create HTTP server to serve static files and run WebSocket in parallel."""
     app = web.Application()
-    frontend_path = Path(__file__).parent / "frontend"
+    frontend_path = Path(__file__).parent / "docs"
     
     # Serve index.html for root path
     async def index_handler(request):
