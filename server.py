@@ -290,7 +290,7 @@ async def run_session():
             vad_analyzer=SileroVADAnalyzer(
                 params=VADParams(stop_secs=0.5)
             ),
-            transcription_enabled=False,
+            transcription_enabled=True,
             serializer=serializer,
         ),
         host=HOST,
@@ -325,7 +325,7 @@ async def main():
 async def create_http_server():
     """Create HTTP server to serve static files and run WebSocket in parallel."""
     app = web.Application()
-    frontend_path = Path(__file__).parent / "frontend"
+    frontend_path = Path(__file__).parent / "docs"
     
     # Serve index.html for root path
     async def index_handler(request):
