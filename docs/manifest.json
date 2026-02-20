@@ -1,0 +1,27 @@
+{
+  "name": "TeenMind",
+  "short_name": "TeenMind",
+  "description": "A safe space to talk. Always here, always listening.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a1a",
+  "theme_color": "#22c55e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle"],
+  "lang": "en-US"
+}
