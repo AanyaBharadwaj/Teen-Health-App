@@ -35,8 +35,9 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.serializers.base_serializer import FrameSerializer
+import aiohttp as _aiohttp
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.deepgram.tts import DeepgramTTSService
+from pipecat.services.deepgram.tts import DeepgramHttpTTSService
 from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.websocket.server import WebsocketServerTransport, WebsocketServerParams
 
@@ -187,10 +188,15 @@ async def run_bot(transport, user_metadata=None, serializer=None):
         model="nova-2",
     )
 
+    # Use HTTP TTS so set_voice() takes effect immediately per utterance
+    # (WebSocket TTS bakes the voice into the connection URL at startup,
+    # making runtime voice switching impossible)
     voice_pref = (user_metadata or {}).get("voice", "female")
-    tts = DeepgramTTSService(
+    http_session = _aiohttp.ClientSession()
+    tts = DeepgramHttpTTSService(
         api_key=DEEPGRAM_API_KEY,
         voice=VOICE_MAP.get(voice_pref, VOICE_MAP["female"]),
+        aiohttp_session=http_session,
         sample_rate=16000,
     )
 
@@ -270,7 +276,10 @@ async def run_bot(transport, user_metadata=None, serializer=None):
 
     # Run the pipeline
     runner = PipelineRunner()
-    await runner.run(task)
+    try:
+        await runner.run(task)
+    finally:
+        await http_session.close()
 
 
 async def run_session():
