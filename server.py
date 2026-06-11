@@ -163,132 +163,15 @@ class RawAudioSerializer(FrameSerializer):
         await self._metadata_event.wait()
         return self._metadata
 
-
-async def run_bot(transport, user_metadata=None, serializer=None):
-    """Shared pipeline logic used by both local WebSocket and PCC cloud modes.
-
-    Args:
-        transport: A Pipecat transport (WebsocketServerTransport or SmallWebRTCTransport).
-        user_metadata: Optional dict with keys name, mood, topic. When provided
-            (cloud mode), the system prompt is personalized immediately. When None
-            (local mode), the server waits for a JSON metadata message from the client.
-        serializer: RawAudioSerializer instance (local mode only) used to receive
-            metadata from the WebSocket client.
-    """
-
-    # Voice selection — map preference to Deepgram Aura voices
-    VOICE_MAP = {
-        "female": "aura-asteria-en",
-        "male": "aura-orion-en",
-    }
-
-    # Initialize services
-    stt = DeepgramSTTService(
-        api_key=DEEPGRAM_API_KEY,
-        model="nova-2",
-    )
-
-    # Use HTTP TTS so set_voice() takes effect immediately per utterance
-    # (WebSocket TTS bakes the voice into the connection URL at startup,
-    # making runtime voice switching impossible)
-    voice_pref = (user_metadata or {}).get("voice", "female")
-    http_session = _aiohttp.ClientSession()
-    tts = DeepgramHttpTTSService(
-        api_key=DEEPGRAM_API_KEY,
-        voice=VOICE_MAP.get(voice_pref, VOICE_MAP["female"]),
-        aiohttp_session=http_session,
-        sample_rate=16000,
-    )
-
-    llm = GoogleLLMService(
-        api_key=GEMINI_API_KEY,
-        model="gemini-2.5-flash",
-    )
-
-    # Build personalized or default system prompt
-    if user_metadata:
-        name = user_metadata.get("name", "there")
-        mood = user_metadata.get("mood", "okay")
-        topic = user_metadata.get("topic")
-        prompt = build_system_prompt(name, mood, topic)
-        logger.info(f"Cloud mode: personalized prompt for {name} (mood: {mood}, topic: {topic}, voice: {voice_pref})")
-    else:
-        prompt = SYSTEM_PROMPT
-
-    messages = [{"role": "system", "content": prompt}]
-
-    context = OpenAILLMContext(messages)
-    context_aggregator = llm.create_context_aggregator(context)
-
-    # Build the pipeline
-    pipeline = Pipeline([
-        transport.input(),
-        stt,
-        context_aggregator.user(),
-        llm,
-        tts,
-        transport.output(),
-        context_aggregator.assistant(),
-    ])
-
-    # Create task
-    task = PipelineTask(
-        pipeline,
-        params=PipelineParams(
-            allow_interruptions=True,
-            enable_metrics=True,
-        ),
-    )
-
-    # Event handlers
-    @transport.event_handler("on_client_connected")
-    async def on_client_connected(transport_ref, client):
-        logger.info(f"Client connected: {client}")
-
-        if user_metadata:
-            # Cloud mode — prompt already personalized, just kick off the LLM
-            await task.queue_frames([LLMMessagesFrame(messages)])
-        else:
-            # Local mode — wait for metadata JSON from the WebSocket client
-            async def wait_and_greet():
-                try:
-                    metadata = await asyncio.wait_for(
-                        serializer.wait_for_metadata(), timeout=10.0
-                    )
-                    name = metadata.get("name", "there")
-                    mood = metadata.get("mood", "okay")
-                    topic = metadata.get("topic")
-                    voice = metadata.get("voice", "female")
-                    personalized = build_system_prompt(name, mood, topic)
-                    messages[0] = {"role": "system", "content": personalized}
-                    tts.set_voice(VOICE_MAP.get(voice, VOICE_MAP["female"]))
-                    logger.info(f"Personalized prompt for {name} (mood: {mood}, topic: {topic}, voice: {voice})")
-                except asyncio.TimeoutError:
-                    logger.warning("Metadata timeout — using default prompt")
-                await task.queue_frames([LLMMessagesFrame(messages)])
-
-            asyncio.create_task(wait_and_greet())
-
-    @transport.event_handler("on_client_disconnected")
-    async def on_client_disconnected(transport_ref, client):
-        logger.info(f"Client disconnected: {client}")
-        await task.queue_frame(EndFrame())
-
-    # Run the pipeline
-    runner = PipelineRunner()
-    try:
-        await runner.run(task)
-    finally:
-        await http_session.close()
-
-
 async def run_session():
     """Run a single local WebSocket conversation session."""
+
+    logger.info("Setting up WebSocket transport (instant)...")
 
     # Create serializer instance so we can access metadata
     serializer = RawAudioSerializer()
 
-    # Create transport with WebSocket
+    # Create transport with WebSocket - with VAD for natural conversation
     transport = WebsocketServerTransport(
         params=WebsocketServerParams(
             audio_in_enabled=True,
@@ -299,14 +182,81 @@ async def run_session():
             vad_analyzer=SileroVADAnalyzer(
                 params=VADParams(stop_secs=0.5)
             ),
-            transcription_enabled=True,
+            transcription_enabled=False,
             serializer=serializer,
         ),
         host=HOST,
         port=PORT,
     )
+    logger.info("✓ WebSocket transport ready (VAD enabled for natural conversation)")
 
-    await run_bot(transport, user_metadata=None, serializer=serializer)
+    # Initialize services (must be done before pipeline)
+    logger.info("Initializing services (5-10 seconds)...")
+    stt = DeepgramSTTService(api_key=DEEPGRAM_API_KEY, model="nova-2")
+    http_session = _aiohttp.ClientSession()
+    tts = DeepgramHttpTTSService(
+        api_key=DEEPGRAM_API_KEY,
+        voice="aura-asteria-en",
+        aiohttp_session=http_session,
+        sample_rate=16000,
+    )
+    llm = GoogleLLMService(api_key=GEMINI_API_KEY, model="gemini-2.5-flash")
+    logger.info("✓ Services connected")
+
+    # Build pipeline
+    context = OpenAILLMContext([{"role": "system", "content": SYSTEM_PROMPT}])
+    context_aggregator = llm.create_context_aggregator(context)
+
+    pipeline = Pipeline([
+        transport.input(),
+        stt,
+        context_aggregator.user(),
+        llm,
+        tts,
+        transport.output(),
+        context_aggregator.assistant(),
+    ])
+
+    task = PipelineTask(
+        pipeline,
+        params=PipelineParams(
+            allow_interruptions=True,
+            enable_metrics=True,
+        ),
+    )
+
+    # Wait for metadata
+    @transport.event_handler("on_client_connected")
+    async def on_client_connected(transport_ref, client):
+        logger.info(f"Client connected: {client}")
+        async def wait_and_greet():
+            try:
+                metadata = await asyncio.wait_for(
+                    serializer.wait_for_metadata(), timeout=10.0
+                )
+                name = metadata.get("name", "there")
+                mood = metadata.get("mood", "okay")
+                topic = metadata.get("topic")
+                voice = metadata.get("voice", "female")
+                personalized = build_system_prompt(name, mood, topic)
+                context.messages[0] = {"role": "system", "content": personalized}
+                logger.info(f"Personalized for {name} (mood: {mood})")
+            except asyncio.TimeoutError:
+                logger.warning("Metadata timeout — using default")
+            await task.queue_frames([LLMMessagesFrame(context.messages)])
+        asyncio.create_task(wait_and_greet())
+
+    @transport.event_handler("on_client_disconnected")
+    async def on_client_disconnected(transport_ref, client):
+        logger.info(f"Client disconnected: {client}")
+        await task.queue_frame(EndFrame())
+
+    # Run pipeline
+    runner = PipelineRunner()
+    try:
+        await runner.run(task)
+    finally:
+        await http_session.close()
 
 
 async def main():
@@ -324,11 +274,10 @@ async def main():
     logger.info(f"Starting TeenMind Real-Time Voice Server on ws://{HOST}:{PORT}")
     logger.info(f"Open http://localhost:8764 in your browser to start talking")
 
-    # Start HTTP server
+    # Start HTTP server first (fast)
+    logger.info("Starting HTTP server...")
     await create_http_server()
-    
-    # This line will never be reached because create_http_server() runs indefinitely
-    # But we'll keep it as a safety measure
+    logger.info("Server ready! Waiting for connections...")
 
 
 async def create_http_server():
