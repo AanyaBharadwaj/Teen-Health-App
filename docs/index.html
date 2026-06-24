@@ -1351,6 +1351,7 @@
         // Configuration
         // =====================================================================
         // Set to "local" for local dev, or "cloud" for Render deployment.
+        // TODO: Make this configurable via environment variable or build process
         const DEPLOY_MODE = 'local'; // 'local' | 'cloud'
 
         // Local mode: raw WebSocket to localhost
@@ -1694,6 +1695,8 @@
             // Reset form elements
             inputName.value = '';
             voiceButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            // Select default female voice button
+            voiceButtons.querySelector('[data-voice="female"]').classList.add('selected');
             agePills.querySelectorAll('.age-pill').forEach(p => p.classList.remove('selected'));
             moodButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             btnContinueProfile.disabled = true;

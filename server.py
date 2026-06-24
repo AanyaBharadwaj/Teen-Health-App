@@ -182,7 +182,7 @@ async def run_session():
             vad_analyzer=SileroVADAnalyzer(
                 params=VADParams(stop_secs=0.5)
             ),
-            transcription_enabled=False,
+            transcription_enabled=True,
             serializer=serializer,
         ),
         host=HOST,
@@ -190,72 +190,87 @@ async def run_session():
     )
     logger.info("✓ WebSocket transport ready (VAD enabled for natural conversation)")
 
+    # Voice selection — map preference to Deepgram Aura voices
+    VOICE_MAP = {
+        "female": "aura-asteria-en",
+        "male": "aura-orion-en",
+    }
+
     # Initialize services (must be done before pipeline)
     logger.info("Initializing services (5-10 seconds)...")
     stt = DeepgramSTTService(api_key=DEEPGRAM_API_KEY, model="nova-2")
     http_session = _aiohttp.ClientSession()
-    tts = DeepgramHttpTTSService(
-        api_key=DEEPGRAM_API_KEY,
-        voice="aura-asteria-en",
-        aiohttp_session=http_session,
-        sample_rate=16000,
-    )
-    llm = GoogleLLMService(api_key=GEMINI_API_KEY, model="gemini-2.5-flash")
-    logger.info("✓ Services connected")
-
-    # Build pipeline
-    context = OpenAILLMContext([{"role": "system", "content": SYSTEM_PROMPT}])
-    context_aggregator = llm.create_context_aggregator(context)
-
-    pipeline = Pipeline([
-        transport.input(),
-        stt,
-        context_aggregator.user(),
-        llm,
-        tts,
-        transport.output(),
-        context_aggregator.assistant(),
-    ])
-
-    task = PipelineTask(
-        pipeline,
-        params=PipelineParams(
-            allow_interruptions=True,
-            enable_metrics=True,
-        ),
-    )
-
-    # Wait for metadata
-    @transport.event_handler("on_client_connected")
-    async def on_client_connected(transport_ref, client):
-        logger.info(f"Client connected: {client}")
-        async def wait_and_greet():
-            try:
-                metadata = await asyncio.wait_for(
-                    serializer.wait_for_metadata(), timeout=10.0
-                )
-                name = metadata.get("name", "there")
-                mood = metadata.get("mood", "okay")
-                topic = metadata.get("topic")
-                voice = metadata.get("voice", "female")
-                personalized = build_system_prompt(name, mood, topic)
-                context.messages[0] = {"role": "system", "content": personalized}
-                logger.info(f"Personalized for {name} (mood: {mood})")
-            except asyncio.TimeoutError:
-                logger.warning("Metadata timeout — using default")
-            await task.queue_frames([LLMMessagesFrame(context.messages)])
-        asyncio.create_task(wait_and_greet())
-
-    @transport.event_handler("on_client_disconnected")
-    async def on_client_disconnected(transport_ref, client):
-        logger.info(f"Client disconnected: {client}")
-        await task.queue_frame(EndFrame())
-
-    # Run pipeline
-    runner = PipelineRunner()
+    
     try:
+        # Default to female voice, will be updated from metadata if provided
+        voice_pref = "female"
+        tts = DeepgramHttpTTSService(
+            api_key=DEEPGRAM_API_KEY,
+            voice=VOICE_MAP.get(voice_pref, VOICE_MAP["female"]),
+            aiohttp_session=http_session,
+            sample_rate=16000,
+        )
+        llm = GoogleLLMService(api_key=GEMINI_API_KEY, model="gemini-2.5-flash")
+        logger.info("✓ Services connected")
+
+        # Build pipeline
+        context = OpenAILLMContext([{"role": "system", "content": SYSTEM_PROMPT}])
+        context_aggregator = llm.create_context_aggregator(context)
+
+        pipeline = Pipeline([
+            transport.input(),
+            stt,
+            context_aggregator.user(),
+            llm,
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
+        ])
+
+        task = PipelineTask(
+            pipeline,
+            params=PipelineParams(
+                allow_interruptions=True,
+                enable_metrics=True,
+            ),
+        )
+
+        # Wait for metadata
+        @transport.event_handler("on_client_connected")
+        async def on_client_connected(transport_ref, client):
+            logger.info(f"Client connected: {client}")
+            async def wait_and_greet():
+                try:
+                    metadata = await asyncio.wait_for(
+                        serializer.wait_for_metadata(), timeout=10.0
+                    )
+                    name = metadata.get("name", "there")
+                    mood = metadata.get("mood", "okay")
+                    topic = metadata.get("topic")
+                    voice = metadata.get("voice", "female")
+                    
+                    # Update voice preference if provided
+                    if voice in VOICE_MAP:
+                        tts.set_voice(VOICE_MAP[voice])
+                    
+                    personalized = build_system_prompt(name, mood, topic)
+                    context.messages[0] = {"role": "system", "content": personalized}
+                    logger.info(f"Personalized for {name} (mood: {mood}, voice: {voice})")
+                except asyncio.TimeoutError:
+                    logger.warning("Metadata timeout — using default")
+                await task.queue_frames([LLMMessagesFrame(context.messages)])
+            asyncio.create_task(wait_and_greet())
+
+        @transport.event_handler("on_client_disconnected")
+        async def on_client_disconnected(transport_ref, client):
+            logger.info(f"Client disconnected: {client}")
+            await task.queue_frame(EndFrame())
+
+        # Run pipeline
+        runner = PipelineRunner()
         await runner.run(task)
     finally:
+        # Ensure http_session is always closed, even if initialization fails
         await http_session.close()
 
 

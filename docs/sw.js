@@ -10,6 +10,7 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
+      .catch((err) => console.error('Cache install failed:', err))
   );
   self.skipWaiting();
 });
@@ -19,6 +20,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+        .catch((err) => console.error('Cache activation failed:', err))
     )
   );
   self.clients.claim();
