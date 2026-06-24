@@ -133,17 +133,28 @@ class RawAudioSerializer(FrameSerializer):
         super().__init__()
         self._metadata_event = asyncio.Event()
         self._metadata = {}
+        self._frame_count = 0
 
     async def serialize(self, frame: Frame) -> str | bytes | None:
+        logger.info(f"Serializing frame: {type(frame).__name__}")
         if isinstance(frame, OutputAudioRawFrame):
+            logger.debug(f"Sending audio frame: {len(frame.audio)} bytes")
             return frame.audio
         elif isinstance(frame, TextFrame):
-            return json.dumps({"type": "text", "text": frame.text})
+            msg = json.dumps({"type": "text", "text": frame.text})
+            logger.info(f"Sending text: {frame.text[:100]}")
+            return msg
         elif isinstance(frame, TranscriptionFrame):
-            return json.dumps({"type": "transcription", "text": frame.text})
+            msg = json.dumps({"type": "transcription", "text": frame.text})
+            logger.info(f"Sending transcription: {frame.text[:100]}")
+            return msg
         return None
 
     async def deserialize(self, data: str | bytes) -> Frame | None:
+        self._frame_count += 1
+        if self._frame_count % 500 == 0:
+            logger.info(f"Total audio frames received: {self._frame_count}")
+        
         if isinstance(data, bytes):
             return InputAudioRawFrame(audio=data, sample_rate=16000, num_channels=1)
         elif isinstance(data, str):
@@ -152,7 +163,7 @@ class RawAudioSerializer(FrameSerializer):
                 if msg.get("type") == "user_metadata":
                     self._metadata = msg
                     self._metadata_event.set()
-                    logger.info(f"Received metadata: name={msg.get('name')}, mood={msg.get('mood')}, topic={msg.get('topic')}")
+                    logger.info(f"Received metadata: name={msg.get('name')}, mood={msg.get('mood')}")
                     return None
             except json.JSONDecodeError:
                 pass
@@ -166,29 +177,37 @@ class RawAudioSerializer(FrameSerializer):
 async def run_session():
     """Run a single local WebSocket conversation session."""
 
-    logger.info("Setting up WebSocket transport (instant)...")
+    logger.info("Setting up WebSocket transport with VAD...")
 
     # Create serializer instance so we can access metadata
     serializer = RawAudioSerializer()
 
-    # Create transport with WebSocket - with VAD for natural conversation
+    # Configure VAD parameters for natural conversation
+    vad_params = VADParams(
+        stop_secs=0.8,  # Wait 0.8s of silence before considering user stopped speaking
+        confidence=0.3,  # Very low confidence threshold
+        start_secs=0.1,  # Quick start detection
+        min_volume=0.2,  # Very low volume threshold
+    )
+
+    # Create VAD analyzer
+    vad = SileroVADAnalyzer(params=vad_params)
+
+    # Create transport with WebSocket and VAD enabled
     transport = WebsocketServerTransport(
         params=WebsocketServerParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
             audio_out_sample_rate=16000,
             audio_in_sample_rate=16000,
-            vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer(
-                params=VADParams(stop_secs=0.5)
-            ),
             transcription_enabled=True,
             serializer=serializer,
+            vad_analyzer=vad,
         ),
         host=HOST,
         port=PORT,
     )
-    logger.info("✓ WebSocket transport ready (VAD enabled for natural conversation)")
+    logger.info("✓ WebSocket transport ready (VAD enabled)")
 
     # Voice selection — map preference to Deepgram Aura voices
     VOICE_MAP = {
@@ -198,7 +217,15 @@ async def run_session():
 
     # Initialize services (must be done before pipeline)
     logger.info("Initializing services (5-10 seconds)...")
-    stt = DeepgramSTTService(api_key=DEEPGRAM_API_KEY, model="nova-2")
+    stt = DeepgramSTTService(
+        api_key=DEEPGRAM_API_KEY,
+        model="nova-2",
+        options={
+            "interim_results": True,  # Enable real-time transcription
+            "language": "en-US",
+            "smart_format": True,
+        }
+    )
     http_session = _aiohttp.ClientSession()
     
     try:
@@ -239,6 +266,7 @@ async def run_session():
         @transport.event_handler("on_client_connected")
         async def on_client_connected(transport_ref, client):
             logger.info(f"Client connected: {client}")
+            logger.info(f"Client details: {dir(client)}")
             async def wait_and_greet():
                 try:
                     metadata = await asyncio.wait_for(
@@ -334,6 +362,7 @@ async def run_websocket_sessions():
             await asyncio.sleep(1)
         except Exception as e:
             logger.error(f"WebSocket session error: {e}")
+            logger.exception("Full traceback:")
             await asyncio.sleep(2)
 
 
