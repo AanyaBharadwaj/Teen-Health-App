@@ -1408,10 +1408,12 @@
             current: 'welcome',
 
             navigate(to) {
+                alert('navigate called with: ' + to);
                 if (to === this.current) return;
 
                 const fromEl = document.getElementById('screen-' + this.current);
                 const toEl = document.getElementById('screen-' + to);
+                alert('fromEl: ' + (fromEl ? 'found' : 'not found') + ', toEl: ' + (toEl ? 'found' : 'not found'));
                 if (!fromEl || !toEl) return;
 
                 // Exit current
@@ -1457,6 +1459,7 @@
             },
 
             onEnter(screen) {
+                alert('onEnter called with screen: ' + screen);
                 switch (screen) {
                     case 'profile':
                         // Focus name input
@@ -1561,6 +1564,7 @@
         // Screen 4: Greeting Animation
         // =====================================================================
         async function startGreetingAnimation() {
+            alert('startGreetingAnimation called!');
             const greetingText = document.getElementById('greetingText');
             const greetingSubtitle = document.getElementById('greetingSubtitle');
 
@@ -1584,6 +1588,7 @@
 
             // Pause then auto-advance
             await sleep(800);
+            alert('Navigating to conversation screen');
             Router.navigate('conversation');
         }
 
@@ -1656,13 +1661,26 @@
         });
 
         function startConversation() {
+            console.log('startConversation called!');
             // Reset conversation UI
-            transcript.innerHTML = '';
-            transcriptEmpty.style.display = '';
-            topicChips.classList.remove('hidden');
-            audioLevelFill.style.width = '0%';
-            updateUI('idle', 'Ready to chat');
+            try {
+                console.log('About to clear transcript');
+                transcript.innerHTML = '';
+                console.log('transcript cleared');
+                transcriptEmpty.style.display = '';
+                console.log('transcriptEmpty cleared');
+                topicChips.classList.remove('hidden');
+                console.log('topicChips shown');
+                audioLevelFill.style.width = '0%';
+                console.log('audioLevel reset');
+                updateUI('idle', 'Ready to chat');
+                console.log('UI updated');
+            } catch (e) {
+                console.error('Error in UI reset:', e);
+                alert('Error in UI reset: ' + e.message);
+            }
 
+            console.log('About to call connect()');
             // Auto-connect WebSocket
             connect();
         }
@@ -1779,12 +1797,14 @@
         // Connection Handling (WebSocket — works for both local and Render)
         // =====================================================================
         async function connect() {
+            console.log('connect() called, WEBSOCKET_URL:', WEBSOCKET_URL);
             if (websocket && websocket.readyState === WebSocket.CONNECTING) return;
             if (websocket && websocket.readyState === WebSocket.OPEN) return;
 
             try {
                 updateUI('connecting', 'Getting ready to talk...');
 
+                console.log('Creating WebSocket connection to:', WEBSOCKET_URL);
                 websocket = new WebSocket(WEBSOCKET_URL);
                 websocket.binaryType = 'arraybuffer';
 
@@ -1836,24 +1856,44 @@
         async function startAudio() {
             if (audioContext) return;
 
+            console.log('Starting audio capture...');
+
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    sampleRate: SAMPLE_RATE,
-                    channelCount: 1,
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                }
-            });
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true  // Simplified - let browser handle defaults
+                });
+                console.log('Microphone access granted');
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                throw err;
+            }
 
             audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+            
+            // Resume AudioContext (required by browsers)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log('AudioContext resumed');
+            }
+
             const source = audioContext.createMediaStreamSource(mediaStream);
             const processor = audioContext.createScriptProcessor(FRAME_SIZE, 1, 1);
 
+            let frameCount = 0;
             processor.onaudioprocess = (event) => {
-                if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+                frameCount++;
+                if (frameCount % 100 === 0) {
+                    console.log('Audio frames processed:', frameCount);
+                }
+
+                if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                    if (frameCount % 100 === 0) {
+                        console.log('WebSocket not ready, skipping frame');
+                    }
+                    return;
+                }
 
                 const inputData = event.inputBuffer.getChannelData(0);
 
@@ -1868,6 +1908,10 @@
                     const s = Math.max(-1, Math.min(1, inputData[i]));
                     int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
                 }
+                
+                if (frameCount % 100 === 0) {
+                    console.log('Sending audio frame:', int16Data.length, 'bytes');
+                }
                 websocket.send(int16Data.buffer);
             };
 
@@ -1876,6 +1920,7 @@
 
             isConnected = true;
             updateUI('listening', 'I\'m listening 💙');
+            console.log('Audio capture started successfully');
         }
 
         // =====================================================================
