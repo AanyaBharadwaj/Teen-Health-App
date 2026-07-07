@@ -1,0 +1,13 @@
+# TeenMind Real-Time Voice - Dependencies
+
+# Pipecat AI Framework
+pipecat-ai[silero,deepgram,google,small-webrtc]>=0.0.65
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Logging
+loguru>=0.7.0
+
+# Cloud deployment (HTTP + WebSocket proxy)
+aiohttp>=3.9.0

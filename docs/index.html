@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TeenMind - Your Safe Space to Talk</title>
+
+    <!-- Open Graph for sharing -->
+    <meta property="og:title" content="TeenMind - Your Safe Space to Talk">
+    <meta property="og:description" content="A supportive AI companion for teens. Always here to listen, never judgmental.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://aanyabharadwaj.github.io/Teen-Health-App/">
+    <meta property="og:image" content="https://aanyabharadwaj.github.io/Teen-Health-App/icon.svg">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TeenMind - Your Safe Space to Talk">
+    <meta name="twitter:description" content="A supportive AI companion for teens. Always here to listen, never judgmental.">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#22c55e">
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TeenMind">
+    <link rel="apple-touch-icon" href="icon.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(145deg, #0a0a1a 0%, #1a1a3e 50%, #0d1f2d 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            /* Respect iPhone notch and home bar */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Ambient background glow */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::before {
+            top: -15%;
+            right: -10%;
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(110, 231, 183, 0.07) 0%, transparent 70%);
+            animation: drift 12s ease-in-out infinite;
+        }
+        body::after {
+            bottom: -10%;
+            left: -15%;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+            animation: drift 15s ease-in-out infinite reverse;
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 20px); }
+        }
+
+        /* ===== Floating Bubbles Background ===== */
+        .bubble-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            opacity: 0.6;
+            filter: blur(0.5px);
+        }
+
+        .bubble:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 10%;
+            left: 5%;
+            animation: float1 20s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(110, 231, 183, 0.12), rgba(110, 231, 183, 0.01));
+            border-color: rgba(110, 231, 183, 0.1);
+        }
+
+        .bubble:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            right: 10%;
+            animation: float2 25s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.01));
+            border-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .bubble:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            bottom: 15%;
+            left: 15%;
+            animation: float3 22s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.01));
+            border-color: rgba(168, 85, 247, 0.1);
+        }
+
+        .bubble:nth-child(4) {
+            width: 90px;
+            height: 90px;
+            top: 50%;
+            right: 8%;
+            animation: float4 28s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(236, 72, 153, 0.1), rgba(236, 72, 153, 0.01));
+            border-color: rgba(236, 72, 153, 0.1);
+        }
+
+        .bubble:nth-child(5) {
+            width: 70px;
+            height: 70px;
+            top: 70%;
+            left: 10%;
+            animation: float5 24s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.01));
+            border-color: rgba(34, 197, 94, 0.1);
+        }
+
+        .bubble:nth-child(6) {
+            width: 60px;
+            height: 60px;
+            bottom: 25%;
+            right: 20%;
+            animation: float6 26s infinite ease-in-out;
+            background: radial-gradient(circle at 30% 30%, rgba(250, 204, 21, 0.1), rgba(250, 204, 21, 0.01));
+            border-color: rgba(250, 204, 21, 0.1);
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(30px, -40px); }
+            50% { transform: translate(-20px, -80px); }
+            75% { transform: translate(40px, -30px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-40px, 50px); }
+            50% { transform: translate(20px, 80px); }
+            75% { transform: translate(-30px, 40px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, -50px); }
+            50% { transform: translate(-30px, 30px); }
+            75% { transform: translate(25px, -70px); }
+        }
+
+        @keyframes float4 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-35px, -60px); }
+            50% { transform: translate(45px, 40px); }
+            75% { transform: translate(-20px, 70px); }
+        }
+
+        @keyframes float5 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(40px, 35px); }
+            50% { transform: translate(-50px, -45px); }
+            75% { transform: translate(30px, 50px); }
+        }
+
+        @keyframes float6 {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-45px, 40px); }
+            50% { transform: translate(35px, -55px); }
+            75% { transform: translate(-25px, -40px); }
+        }
+
+        /* ===== App Container ===== */
+        #app {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            z-index: 2;
+        }
+
+        /* ===== Progress Dots ===== */
+        .progress-dots {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+
+        .progress-dots.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+
+        .progress-dot.completed {
+            background: rgba(34, 197, 94, 0.4);
+        }
+
+        /* ===== Screen System ===== */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px 20px;
+            opacity: 0;
+            transform: translateX(40px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .screen.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        .screen.exiting {
+            opacity: 0;
+            transform: translateX(-40px);
+            z-index: 1;
+        }
+
+        /* ===== Shared Styles ===== */
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px 24px;
+            backdrop-filter: blur(20px);
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            box-shadow: 0 4px 24px rgba(34, 197, 94, 0.25);
+        }
+
+        .btn-green:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-green:active:not(:disabled) {
+            transform: translateY(0) scale(0.99);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.01);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary:active:not(:disabled) {
+            transform: translateY(0) scale(0.99);
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-red:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .crisis-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .crisis-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .crisis-link svg {
+            flex-shrink: 0;
+        }
+
+        /* ===== Screen 1: Welcome ===== */
+        .welcome-hero {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin-bottom: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-glow {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(110, 231, 183, 0.18) 0%, rgba(59, 130, 246, 0.06) 50%, transparent 70%);
+            animation: glow-breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes glow-breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .hero-emoji {
+            position: absolute;
+            font-size: 1.8rem;
+            animation: floatEmoji 5s ease-in-out infinite;
+        }
+
+        .hero-emoji.e1 { top: 8%;  left: 10%;  animation-delay: 0s; }
+        .hero-emoji.e2 { top: 5%;  right: 12%; animation-delay: 0.8s; }
+        .hero-emoji.e3 { font-size: 3rem; position: relative; animation: none; filter: drop-shadow(0 0 20px rgba(110, 231, 183, 0.3)); }
+        .hero-emoji.e4 { bottom: 8%; left: 5%;  animation-delay: 1.6s; }
+        .hero-emoji.e5 { bottom: 12%; right: 8%; animation-delay: 0.4s; }
+
+        @keyframes floatEmoji {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        #screen-welcome .logo {
+            font-size: 3rem;
+            margin-bottom: 6px;
+        }
+
+        .welcome-sub {
+            font-size: 1.05rem;
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 400;
+            margin-bottom: 16px;
+            letter-spacing: 0.3px;
+        }
+
+        #screen-welcome .tagline {
+            font-size: 1rem;
+            margin-bottom: 44px;
+            max-width: 280px;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        #screen-welcome .btn {
+            max-width: 300px;
+            padding: 18px 24px;
+            font-size: 1.05rem;
+            border-radius: 16px;
+        }
+
+        /* ===== Screen 2: Profile ===== */
+        #screen-profile {
+            justify-content: flex-start;
+            padding-top: 80px;
+        }
+
+        #screen-profile h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .screen-sub {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .form-section {
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 28px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        /* Floating label input */
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 20px 16px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-wrapper input:focus {
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+
+        .input-wrapper label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.35);
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper input:focus + label,
+        .input-wrapper input:not(:placeholder-shown) + label {
+            top: 12px;
+            transform: translateY(0);
+            font-size: 0.7rem;
+            color: rgba(34, 197, 94, 0.7);
+        }
+
+        /* Age pills */
+        .age-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .age-pill {
+            padding: 10px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .age-pill:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .age-pill.selected {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.15);
+            color: #6ee7b7;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
+        }
+
+        /* Mood buttons — horizontal emoji grid */
+        .mood-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .mood-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.55);
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 68px;
+        }
+
+        .mood-btn:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .mood-btn.selected {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.12);
+            color: #6ee7b7;
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.12);
+        }
+
+        .mood-btn .mood-emoji {
+            font-size: 1.7rem;
+        }
+
+        .mood-btn .mood-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+
+        #screen-profile .btn {
+            max-width: 420px;
+            margin-top: 8px;
+        }
+
+        /* ===== Screen 3: Disclaimer ===== */
+        #screen-disclaimer {
+            justify-content: flex-start;
+            padding-top: 80px;
+        }
+
+        #screen-disclaimer h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .disclaimer-card {
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 28px;
+        }
+
+        .disclaimer-section {
+            margin-bottom: 20px;
+        }
+
+        .disclaimer-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .disclaimer-section h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #6ee7b7;
+        }
+
+        .disclaimer-section p {
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.55;
+        }
+
+        .consent-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .consent-row input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .consent-row input[type="checkbox"]:checked {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .consent-row input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 6px;
+            height: 11px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .consent-row span {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+        }
+
+        #screen-disclaimer .btn {
+            max-width: 420px;
+        }
+
+        /* ===== Screen 4: Greeting ===== */
+        .greeting-wave {
+            font-size: 5rem;
+            display: inline-block;
+            animation: wave 1s ease-in-out infinite;
+            transform-origin: 70% 70%;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 0 24px rgba(110, 231, 183, 0.2));
+        }
+
+        @keyframes wave {
+            0% { transform: rotate(0deg); }
+            15% { transform: rotate(14deg); }
+            30% { transform: rotate(-8deg); }
+            45% { transform: rotate(14deg); }
+            60% { transform: rotate(-4deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .greeting-text {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            min-height: 2.4rem;
+            background: linear-gradient(135deg, #fff 0%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .greeting-subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.6);
+            min-height: 1.4rem;
+            line-height: 1.6;
+            max-width: 320px;
+            transition: opacity 0.5s ease;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #6ee7b7;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.7s step-end infinite;
+        }
+
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ===== Screen 5: Conversation ===== */
+        #screen-conversation {
+            justify-content: flex-start;
+            padding-top: 40px;
+        }
+
+        .conversation-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .conversation-header .logo {
+            font-size: 1.4rem;
+            margin-bottom: 0;
+        }
+
+        /* Avatar */
+        .avatar-wrapper {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 24px;
+        }
+
+        .avatar-ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.4s ease;
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+        }
+
+        /* Avatar States */
+        .avatar-wrapper.idle .avatar {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar-wrapper.connecting .avatar {
+            border-color: #fbbf24;
+            animation: pulse-border 1.5s infinite;
+        }
+
+        .avatar-wrapper.listening .avatar {
+            border-color: #22c55e;
+            box-shadow: 0 0 40px rgba(34, 197, 94, 0.3);
+        }
+
+        .avatar-wrapper.listening .avatar-ring {
+            border-color: rgba(34, 197, 94, 0.2);
+            animation: ring-expand 2s infinite;
+        }
+
+        .avatar-wrapper.thinking .avatar {
+            border-color: #f59e0b;
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+            animation: pulse-glow 1s infinite;
+        }
+
+        .avatar-wrapper.speaking .avatar {
+            border-color: #3b82f6;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+        }
+
+        .avatar-wrapper.speaking .avatar-ring {
+            border-color: rgba(59, 130, 246, 0.3);
+            animation: ring-expand 1s infinite;
+        }
+
+        .avatar-wrapper.error .avatar {
+            border-color: #ef4444;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 0 60px rgba(245, 158, 11, 0.5); }
+        }
+
+        @keyframes ring-expand {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Status */
+        .status-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6b7280;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.listening { border-color: rgba(34, 197, 94, 0.3); }
+        .status-badge.listening .status-dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+        .status-badge.thinking { border-color: rgba(245, 158, 11, 0.3); }
+        .status-badge.thinking .status-dot { background: #f59e0b; animation: blink 0.8s infinite; }
+
+        .status-badge.speaking { border-color: rgba(59, 130, 246, 0.3); }
+        .status-badge.speaking .status-dot { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+
+        .status-badge.error { border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .status-badge.error .status-dot { background: #ef4444; }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Audio Level */
+        .audio-level {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .audio-level-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #3b82f6);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Topic Chips */
+        .topic-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 20px;
+            max-height: 120px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.4s ease, margin 0.4s ease;
+        }
+
+        .topic-chips.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+            pointer-events: none;
+        }
+
+        .topic-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .topic-chip:hover {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.15);
+            color: #fff;
+        }
+
+        /* Transcript */
+        .transcript-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .transcript-card::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .transcript-card::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .transcript-card::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .transcript-empty {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            opacity: 0.5;
+        }
+
+        .message-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .message.user .message-label { color: #93c5fd; }
+        .message.user .message-text { color: #bfdbfe; }
+
+        .message.assistant .message-label { color: #6ee7b7; }
+        .message.assistant .message-text { color: #a7f3d0; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .conversation-main-card {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        #screen-conversation .btn {
+            max-width: 420px;
+        }
+
+        .conversation-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .conversation-footer .footer-text {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+        }
+
+        /* ===== Screen 6: Goodbye ===== */
+        .goodbye-emoji {
+            font-size: 4.5rem;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 0 20px rgba(110, 231, 183, 0.2));
+        }
+
+        .goodbye-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .goodbye-subtitle {
+            font-size: 1.05rem;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 40px;
+            line-height: 1.6;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        #screen-goodbye .btn {
+            max-width: 300px;
+            margin-bottom: 24px;
+            padding: 18px 24px;
+            border-radius: 16px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 480px) {
+            .card {
+                padding: 24px 16px;
+            }
+
+            .avatar-wrapper {
+                width: 120px;
+                height: 120px;
+            }
+
+            .avatar {
+                font-size: 48px;
+            }
+
+            #screen-welcome .logo {
+                font-size: 2.4rem;
+            }
+
+            #screen-profile,
+            #screen-disclaimer {
+                padding-top: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Bubbles Background -->
+    <div class="bubble-container">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+    
+    <div id="app">
+        <!-- Progress Dots (visible screens 1-3) -->
+        <div class="progress-dots" id="progressDots" aria-label="Onboarding progress">
+            <div class="progress-dot active" data-step="0"></div>
+            <div class="progress-dot" data-step="1"></div>
+            <div class="progress-dot" data-step="2"></div>
+        </div>
+
+        <!-- Screen 1: Welcome -->
+        <section class="screen active" id="screen-welcome" aria-label="Welcome">
+            <div class="welcome-hero" aria-hidden="true">
+                <div class="welcome-glow"></div>
+                <span class="hero-emoji e1">💬</span>
+                <span class="hero-emoji e2">🌱</span>
+                <span class="hero-emoji e3">🧠</span>
+                <span class="hero-emoji e4">✨</span>
+                <span class="hero-emoji e5">💙</span>
+            </div>
+            <h1 class="logo">TeenMind</h1>
+            <p class="welcome-sub">Your safe space to talk</p>
+            <p class="tagline">Here whenever you need to talk.<br>No judgment, just support.</p>
+            <button class="btn btn-green" id="btnGetStarted" aria-label="Get started with TeenMind">
+                Let's Talk 💙
+            </button>
+        </section>
+
+        <!-- Screen 2: Profile Setup -->
+        <section class="screen" id="screen-profile" aria-label="Profile setup">
+            <h2>Let's get to know you 💙</h2>
+            <p class="screen-sub">Just a few things so I can be there for you in the best way possible.</p>
+
+            <div class="form-section">
+                <div class="input-wrapper">
+                    <input type="text" id="inputName" placeholder=" " aria-label="What's your name?" autocomplete="off" />
+                    <label for="inputName">What's your name?</label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <span class="form-label">How old are you?</span>
+                <div class="age-pills" id="agePills" role="group" aria-label="Select your age">
+                    <button class="age-pill" data-age="13" aria-label="Age 13">13</button>
+                    <button class="age-pill" data-age="14" aria-label="Age 14">14</button>
+                    <button class="age-pill" data-age="15" aria-label="Age 15">15</button>
+                    <button class="age-pill" data-age="16" aria-label="Age 16">16</button>
+                    <button class="age-pill" data-age="17" aria-label="Age 17">17</button>
+                    <button class="age-pill" data-age="18" aria-label="Age 18">18</button>
+                    <button class="age-pill" data-age="19" aria-label="Age 19">19</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <span class="form-label">How are you feeling today?</span>
+                <div class="mood-buttons" id="moodButtons" role="group" aria-label="Select your mood">
+                    <button class="mood-btn" data-mood="great" aria-label="Feeling great">
+                        <span class="mood-emoji">😊</span>
+                        <span class="mood-label">Great</span>
+                    </button>
+                    <button class="mood-btn" data-mood="good" aria-label="Feeling good">
+                        <span class="mood-emoji">🙂</span>
+                        <span class="mood-label">Good</span>
+                    </button>
+                    <button class="mood-btn" data-mood="okay" aria-label="Feeling okay">
+                        <span class="mood-emoji">😐</span>
+                        <span class="mood-label">Okay</span>
+                    </button>
+                    <button class="mood-btn" data-mood="not great" aria-label="Not feeling great">
+                        <span class="mood-emoji">😔</span>
+                        <span class="mood-label">Meh</span>
+                    </button>
+                    <button class="mood-btn" data-mood="struggling" aria-label="Struggling">
+                        <span class="mood-emoji">😢</span>
+                        <span class="mood-label">Rough</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <span class="form-label">Choose a voice</span>
+                <div class="mood-buttons" id="voiceButtons" role="group" aria-label="Select voice">
+                    <button class="mood-btn" data-voice="female" aria-label="Female voice">
+                        <span class="mood-emoji">👩</span>
+                        <span class="mood-label">Female</span>
+                    </button>
+                    <button class="mood-btn" data-voice="male" aria-label="Male voice">
+                        <span class="mood-emoji">👨</span>
+                        <span class="mood-label">Male</span>
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn btn-green" id="btnContinueProfile" disabled aria-label="Continue to next step">
+                Continue
+            </button>
+        </section>
+
+        <!-- Screen 3: Disclaimer -->
+        <section class="screen" id="screen-disclaimer" aria-label="Disclaimer and consent">
+            <h2>Before we start 💙</h2>
+            <p class="screen-sub">Just a few things to know so we can have the best conversation.</p>
+
+            <div class="card disclaimer-card">
+                <div class="disclaimer-section">
+                    <h3>🤝 What TeenMind Is</h3>
+                    <p>A supportive friend who's here to listen, encourage you, and help you work through whatever's on your mind.</p>
+                </div>
+                <div class="disclaimer-section">
+                    <h3>🚫 What TeenMind Is Not</h3>
+                    <p>I'm not a therapist or doctor. If you're going through a really tough time, please reach out to a trusted adult or call 988 - they're there to help.</p>
+                </div>
+                <div class="disclaimer-section">
+                    <h3>🔒 Your Privacy</h3>
+                    <p>Your conversations are private. What you share here stays here - no storage, no sharing.</p>
+                </div>
+            </div>
+
+            <label class="consent-row" for="consentCheckbox">
+                <input type="checkbox" id="consentCheckbox" aria-label="I understand and want to continue" />
+                <span>I understand and I'm ready to talk</span>
+            </label>
+
+            <button class="btn btn-green" id="btnReady" disabled aria-label="I'm ready to start">
+                I'm Ready 💙
+            </button>
+        </section>
+
+        <!-- Screen 4: Greeting Animation -->
+        <section class="screen" id="screen-greeting" aria-label="Greeting">
+            <div class="greeting-wave" aria-hidden="true">&#x1F44B;</div>
+            <div class="greeting-text" id="greetingText" aria-live="polite"></div>
+            <div class="greeting-subtitle" id="greetingSubtitle" aria-live="polite"></div>
+        </section>
+
+        <!-- Screen 5: Conversation -->
+        <section class="screen" id="screen-conversation" aria-label="Voice conversation">
+            <div class="conversation-header">
+                <h1 class="logo">TeenMind</h1>
+            </div>
+
+            <div class="conversation-main-card">
+                <div class="avatar-wrapper idle" id="avatarWrapper">
+                    <div class="avatar-ring"></div>
+                    <div class="avatar" id="avatar">
+                        <span id="avatarEmoji">&#x1F4AD;</span>
+                    </div>
+                </div>
+
+                <div class="status-container">
+                    <div class="status-badge" id="statusBadge">
+                        <span class="status-dot"></span>
+                        <span id="statusText">Ready to chat</span>
+                    </div>
+                </div>
+
+                <div class="audio-level" id="audioLevel">
+                    <div class="audio-level-fill" id="audioLevelFill"></div>
+                </div>
+
+                <div class="topic-chips" id="topicChips" aria-label="Conversation topic suggestions">
+                    <button class="topic-chip" data-topic="school" aria-label="Talk about school">School</button>
+                    <button class="topic-chip" data-topic="friends" aria-label="Talk about friends">Friends</button>
+                    <button class="topic-chip" data-topic="family" aria-label="Talk about family">Family</button>
+                    <button class="topic-chip" data-topic="feelings" aria-label="Talk about feelings">Feelings</button>
+                    <button class="topic-chip" data-topic="just talk" aria-label="Just talk">Just talk</button>
+                </div>
+
+                <div class="transcript-card" id="transcriptCard">
+                    <div class="transcript-empty" id="transcriptEmpty">
+                        Your conversation will appear here
+                    </div>
+                    <div id="transcript"></div>
+                </div>
+
+                <button class="btn btn-red" id="btnEndConversation" aria-label="End conversation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                    End Conversation
+                </button>
+            </div>
+
+            <div class="conversation-footer">
+                <p class="footer-text">Speak freely. I'm here to listen.</p>
+                <a href="tel:988" class="crisis-link" aria-label="Call 988 for crisis support">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    In crisis? Call 988
+                </a>
+            </div>
+        </section>
+
+        <!-- Screen 6: Goodbye -->
+        <section class="screen" id="screen-goodbye" aria-label="Goodbye">
+            <div class="goodbye-emoji" aria-hidden="true">&#x1F49A;</div>
+            <div class="goodbye-title" id="goodbyeTitle">Thanks for talking 💙</div>
+            <div class="goodbye-subtitle">Remember, I'm always here whenever you need someone to listen.</div>
+            <button class="btn btn-green" id="btnRestart" aria-label="Start a new conversation">
+                Talk Again 💙
+            </button>
+            <button class="btn btn-secondary" id="btnShare" aria-label="Share TeenMind with a friend">
+                Share with a Friend 💌
+            </button>
+            <a href="tel:988" class="crisis-link" aria-label="Call 988 for crisis support">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                In crisis? Call 988
+            </a>
+        </section>
+    </div>
+
+    <script>
+        // =====================================================================
+        // Configuration
+        // =====================================================================
+        // Set to "local" for local dev, or "cloud" for Render deployment.
+        // TODO: Make this configurable via environment variable or build process
+        const DEPLOY_MODE = 'local'; // 'local' | 'cloud'
+
+        // Local mode: raw WebSocket to localhost
+        const LOCAL_WS_URL = 'ws://localhost:8765';
+
+        // Cloud mode: wss:// to your Render service URL + /ws path
+        const CLOUD_WS_URL = 'wss://teen-health-app-1.onrender.com/ws';
+
+        const WEBSOCKET_URL = DEPLOY_MODE === 'cloud' ? CLOUD_WS_URL : LOCAL_WS_URL;
+
+        const SAMPLE_RATE = 16000;
+        const FRAME_SIZE = 512;
+
+        // =====================================================================
+        // App State
+        // =====================================================================
+        const AppState = {
+            name: '',
+            age: null,
+            mood: '',
+            topic: null,
+            voice: 'female'
+        };
+
+        // =====================================================================
+        // Audio / WebSocket State
+        // =====================================================================
+        let websocket = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let isConnected = false;
+        let audioQueue = [];
+        let isPlaying = false;
+
+        // =====================================================================
+        // DOM References
+        // =====================================================================
+        const avatarWrapper = document.getElementById('avatarWrapper');
+        const avatarEmoji = document.getElementById('avatarEmoji');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        const transcript = document.getElementById('transcript');
+        const transcriptEmpty = document.getElementById('transcriptEmpty');
+        const transcriptCard = document.getElementById('transcriptCard');
+        const audioLevelFill = document.getElementById('audioLevelFill');
+        const topicChips = document.getElementById('topicChips');
+        const progressDots = document.getElementById('progressDots');
+
+        // =====================================================================
+        // Router
+        // =====================================================================
+        const Router = {
+            screens: ['welcome', 'profile', 'disclaimer', 'greeting', 'conversation', 'goodbye'],
+            current: 'welcome',
+
+            navigate(to) {
+                alert('navigate called with: ' + to);
+                if (to === this.current) return;
+
+                const fromEl = document.getElementById('screen-' + this.current);
+                const toEl = document.getElementById('screen-' + to);
+                alert('fromEl: ' + (fromEl ? 'found' : 'not found') + ', toEl: ' + (toEl ? 'found' : 'not found'));
+                if (!fromEl || !toEl) return;
+
+                // Exit current
+                fromEl.classList.remove('active');
+                fromEl.classList.add('exiting');
+
+                // Enter new
+                toEl.classList.add('active');
+
+                // Clean up exiting after transition
+                setTimeout(() => {
+                    fromEl.classList.remove('exiting');
+                }, 500);
+
+                const prev = this.current;
+                this.current = to;
+
+                // Update progress dots
+                this.updateProgress(to);
+
+                // Fire onEnter hook
+                this.onEnter(to);
+            },
+
+            updateProgress(screen) {
+                const idx = this.screens.indexOf(screen);
+                const dots = progressDots.querySelectorAll('.progress-dot');
+
+                // Progress dots visible only for screens 0-2 (welcome, profile, disclaimer)
+                if (idx <= 2) {
+                    progressDots.classList.remove('hidden');
+                    dots.forEach((dot, i) => {
+                        dot.classList.remove('active', 'completed');
+                        if (i < idx) {
+                            dot.classList.add('completed');
+                        } else if (i === idx) {
+                            dot.classList.add('active');
+                        }
+                    });
+                } else {
+                    progressDots.classList.add('hidden');
+                }
+            },
+
+            onEnter(screen) {
+                alert('onEnter called with screen: ' + screen);
+                switch (screen) {
+                    case 'profile':
+                        // Focus name input
+                        setTimeout(() => {
+                            document.getElementById('inputName').focus();
+                        }, 450);
+                        break;
+
+                    case 'greeting':
+                        startGreetingAnimation();
+                        break;
+
+                    case 'conversation':
+                        startConversation();
+                        break;
+
+                    case 'goodbye':
+                        initGoodbye();
+                        break;
+                }
+            }
+        };
+
+        // =====================================================================
+        // Screen 1: Welcome
+        // =====================================================================
+        document.getElementById('btnGetStarted').addEventListener('click', () => {
+            Router.navigate('profile');
+        });
+
+        // =====================================================================
+        // Screen 2: Profile Setup
+        // =====================================================================
+        const inputName = document.getElementById('inputName');
+        const agePills = document.getElementById('agePills');
+        const moodButtons = document.getElementById('moodButtons');
+        const btnContinueProfile = document.getElementById('btnContinueProfile');
+
+        inputName.addEventListener('input', () => {
+            AppState.name = inputName.value.trim();
+            validateProfile();
+        });
+
+        agePills.addEventListener('click', (e) => {
+            const pill = e.target.closest('.age-pill');
+            if (!pill) return;
+
+            agePills.querySelectorAll('.age-pill').forEach(p => p.classList.remove('selected'));
+            pill.classList.add('selected');
+            AppState.age = parseInt(pill.dataset.age, 10);
+            validateProfile();
+        });
+
+        moodButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.mood-btn');
+            if (!btn) return;
+
+            moodButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            AppState.mood = btn.dataset.mood;
+            validateProfile();
+        });
+
+        const voiceButtons = document.getElementById('voiceButtons');
+        voiceButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('.mood-btn');
+            if (!btn) return;
+
+            voiceButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            AppState.voice = btn.dataset.voice;
+        });
+
+        function validateProfile() {
+            const valid = AppState.name.length > 0 && AppState.age !== null;
+            btnContinueProfile.disabled = !valid;
+        }
+
+        btnContinueProfile.addEventListener('click', () => {
+            if (AppState.name && AppState.age) {
+                Router.navigate('disclaimer');
+            }
+        });
+
+        // =====================================================================
+        // Screen 3: Disclaimer
+        // =====================================================================
+        const consentCheckbox = document.getElementById('consentCheckbox');
+        const btnReady = document.getElementById('btnReady');
+
+        consentCheckbox.addEventListener('change', () => {
+            btnReady.disabled = !consentCheckbox.checked;
+        });
+
+        btnReady.addEventListener('click', () => {
+            if (consentCheckbox.checked) {
+                Router.navigate('greeting');
+            }
+        });
+
+        // =====================================================================
+        // Screen 4: Greeting Animation
+        // =====================================================================
+        async function startGreetingAnimation() {
+            alert('startGreetingAnimation called!');
+            const greetingText = document.getElementById('greetingText');
+            const greetingSubtitle = document.getElementById('greetingSubtitle');
+
+            greetingText.innerHTML = '';
+            greetingSubtitle.innerHTML = '';
+
+            const nameText = 'Hi ' + AppState.name + '!';
+            await typeText(greetingText, nameText, 60);
+
+            // Remove cursor from greeting text
+            removeCursor(greetingText);
+
+            // Small pause before subtitle
+            await sleep(300);
+
+            const subtitle = getMoodSubtitle(AppState.mood);
+            await typeText(greetingSubtitle, subtitle, 40);
+
+            // Remove cursor from subtitle
+            removeCursor(greetingSubtitle);
+
+            // Pause then auto-advance
+            await sleep(800);
+            alert('Navigating to conversation screen');
+            Router.navigate('conversation');
+        }
+
+        function getMoodSubtitle(mood) {
+            switch (mood) {
+                case 'great':
+                    return "That's awesome! Let's keep that energy going.";
+                case 'good':
+                    return "Glad to hear it! I'm here if you want to chat.";
+                case 'okay':
+                    return "That's totally fine. Let's talk about whatever's on your mind.";
+                case 'not great':
+                    return "I'm sorry to hear that. I'm here to listen.";
+                case 'struggling':
+                    return "I'm really glad you're here. Let's talk through it together.";
+                default:
+                    return "I'm here for you. Let's talk.";
+            }
+        }
+
+        async function typeText(element, text, speed) {
+            for (let i = 0; i < text.length; i++) {
+                element.textContent = text.substring(0, i + 1);
+                // Add blinking cursor
+                const cursor = document.createElement('span');
+                cursor.className = 'typing-cursor';
+                element.appendChild(cursor);
+
+                await sleep(speed);
+            }
+        }
+
+        function removeCursor(element) {
+            const cursor = element.querySelector('.typing-cursor');
+            if (cursor) cursor.remove();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // =====================================================================
+        // Screen 5: Conversation
+        // =====================================================================
+
+        // Topic chip handlers
+        document.getElementById('topicChips').addEventListener('click', (e) => {
+            const chip = e.target.closest('.topic-chip');
+            if (!chip) return;
+
+            AppState.topic = chip.dataset.topic;
+            hideTopicChips();
+
+            // Send topic as a text message through WebSocket
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({
+                    type: 'topic_selected',
+                    topic: AppState.topic
+                }));
+            }
+        });
+
+        function hideTopicChips() {
+            topicChips.classList.add('hidden');
+        }
+
+        // End conversation button
+        document.getElementById('btnEndConversation').addEventListener('click', () => {
+            endConversation();
+        });
+
+        function startConversation() {
+            console.log('startConversation called!');
+            // Reset conversation UI
+            try {
+                console.log('About to clear transcript');
+                transcript.innerHTML = '';
+                console.log('transcript cleared');
+                transcriptEmpty.style.display = '';
+                console.log('transcriptEmpty cleared');
+                topicChips.classList.remove('hidden');
+                console.log('topicChips shown');
+                audioLevelFill.style.width = '0%';
+                console.log('audioLevel reset');
+                updateUI('idle', 'Ready to chat');
+                console.log('UI updated');
+            } catch (e) {
+                console.error('Error in UI reset:', e);
+                alert('Error in UI reset: ' + e.message);
+            }
+
+            console.log('About to call connect()');
+            // Auto-connect WebSocket
+            connect();
+        }
+
+        function endConversation() {
+            disconnect();
+            Router.navigate('goodbye');
+        }
+
+        // =====================================================================
+        // Screen 6: Goodbye
+        // =====================================================================
+        function initGoodbye() {
+            const goodbyeTitle = document.getElementById('goodbyeTitle');
+            if (AppState.name) {
+                goodbyeTitle.textContent = 'Thanks for talking, ' + AppState.name + '.';
+            } else {
+                goodbyeTitle.textContent = 'Thanks for talking.';
+            }
+        }
+
+        document.getElementById('btnRestart').addEventListener('click', () => {
+            // Reset AppState
+            AppState.name = '';
+            AppState.age = null;
+            AppState.mood = '';
+            AppState.topic = null;
+            AppState.voice = 'female';
+
+            // Reset form elements
+            inputName.value = '';
+            voiceButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            // Select default female voice button
+            voiceButtons.querySelector('[data-voice="female"]').classList.add('selected');
+            agePills.querySelectorAll('.age-pill').forEach(p => p.classList.remove('selected'));
+            moodButtons.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            btnContinueProfile.disabled = true;
+            consentCheckbox.checked = false;
+            btnReady.disabled = true;
+
+            // Reset transcript
+            transcript.innerHTML = '';
+            transcriptEmpty.style.display = '';
+            topicChips.classList.remove('hidden');
+
+            // Navigate back to welcome
+            Router.navigate('welcome');
+        });
+
+        // Share button functionality
+        document.getElementById('btnShare').addEventListener('click', async () => {
+            const shareData = {
+                title: 'TeenMind - Your Safe Space to Talk',
+                text: 'Check out TeenMind - a supportive AI companion for teens. Always here to listen, never judgmental.',
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log('Share failed:', err);
+                    // Fallback: copy to clipboard
+                    copyToClipboard(shareData.url);
+                }
+            } else {
+                // Fallback for browsers without Web Share API
+                copyToClipboard(shareData.url);
+            }
+        });
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Link copied to clipboard! Share it with a friend 💙');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link. Please copy the URL manually.');
+            });
+        }
+
+        // =====================================================================
+        // UI State Updates (preserved from original)
+        // =====================================================================
+        function updateUI(state, message) {
+            avatarWrapper.className = 'avatar-wrapper ' + state;
+            statusBadge.className = 'status-badge ' + state;
+            statusText.textContent = message;
+
+            // Update emoji based on state
+            const emojis = {
+                'idle': '\u{1F4AD}',
+                'connecting': '\u{1F504}',
+                'listening': '\u{1F442}',
+                'thinking': '\u{1F914}',
+                'speaking': '\u{1F5E3}',
+                'error': '\u{1F615}'
+            };
+            avatarEmoji.textContent = emojis[state] || '\u{1F4AD}';
+        }
+
+        function addMessage(role, text) {
+            transcriptEmpty.style.display = 'none';
+
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            const displayName = role === 'user' ? (AppState.name || 'You') : 'TeenMind';
+            div.innerHTML = '<div class="message-label">' + displayName + '</div>' +
+                '<div class="message-text">' + text + '</div>';
+            transcript.appendChild(div);
+            transcriptCard.scrollTop = transcriptCard.scrollHeight;
+        }
+
+        // =====================================================================
+        // Connection Handling (WebSocket — works for both local and Render)
+        // =====================================================================
+        async function connect() {
+            console.log('connect() called, WEBSOCKET_URL:', WEBSOCKET_URL);
+            if (websocket && websocket.readyState === WebSocket.CONNECTING) return;
+            if (websocket && websocket.readyState === WebSocket.OPEN) return;
+
+            try {
+                updateUI('connecting', 'Getting ready to talk...');
+
+                console.log('Creating WebSocket connection to:', WEBSOCKET_URL);
+                websocket = new WebSocket(WEBSOCKET_URL);
+                websocket.binaryType = 'arraybuffer';
+
+                websocket.onopen = async () => {
+                    console.log('WebSocket connected');
+
+                    // Send user metadata as first message
+                    const metadata = {
+                        type: 'user_metadata',
+                        name: AppState.name,
+                        age: AppState.age,
+                        mood: AppState.mood,
+                        topic: AppState.topic,
+                        voice: AppState.voice
+                    };
+                    websocket.send(JSON.stringify(metadata));
+                    console.log('Sent user metadata:', metadata);
+
+                    try {
+                        await startAudio();
+                    } catch (err) {
+                        console.error('Audio setup failed:', err);
+                        updateUI('error', 'I need to hear you. Please allow microphone access 💙');
+                        websocket.close();
+                    }
+                };
+
+                websocket.onmessage = (event) => handleMessage(event.data);
+
+                websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateUI('error', 'Having trouble connecting. Let\'s try again 💙');
+                };
+
+                websocket.onclose = () => {
+                    console.log('WebSocket closed');
+                    if (isConnected) disconnect();
+                };
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                updateUI('error', 'Something went wrong. Let\'s try again 💙');
+            }
+        }
+
+        // =====================================================================
+        // Audio (preserved from original)
+        // =====================================================================
+        async function startAudio() {
+            if (audioContext) return;
+
+            console.log('Starting audio capture...');
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true  // Simplified - let browser handle defaults
+                });
+                console.log('Microphone access granted');
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                throw err;
+            }
+
+            audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+            
+            // Resume AudioContext (required by browsers)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log('AudioContext resumed');
+            }
+
+            const source = audioContext.createMediaStreamSource(mediaStream);
+            const processor = audioContext.createScriptProcessor(FRAME_SIZE, 1, 1);
+
+            let frameCount = 0;
+            processor.onaudioprocess = (event) => {
+                frameCount++;
+                if (frameCount % 100 === 0) {
+                    console.log('Audio frames processed:', frameCount);
+                }
+
+                if (!isConnected || !websocket || websocket.readyState !== WebSocket.OPEN) {
+                    if (frameCount % 100 === 0) {
+                        console.log('WebSocket not ready, skipping frame');
+                    }
+                    return;
+                }
+
+                const inputData = event.inputBuffer.getChannelData(0);
+
+                // Update audio level meter
+                const rms = Math.sqrt(inputData.reduce((sum, x) => sum + x * x, 0) / inputData.length);
+                const level = Math.min(100, rms * 400);
+                audioLevelFill.style.width = level + '%';
+
+                // Convert to Int16 and send
+                const int16Data = new Int16Array(inputData.length);
+                for (let i = 0; i < inputData.length; i++) {
+                    const s = Math.max(-1, Math.min(1, inputData[i]));
+                    int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                
+                if (frameCount % 100 === 0) {
+                    console.log('Sending audio frame:', int16Data.length, 'bytes');
+                }
+                websocket.send(int16Data.buffer);
+            };
+
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+
+            isConnected = true;
+            updateUI('listening', 'I\'m listening 💙');
+            console.log('Audio capture started successfully');
+        }
+
+        // =====================================================================
+        // Message Handling (preserved from original, with topic chip hiding)
+        // =====================================================================
+        function handleMessage(data) {
+            if (data instanceof ArrayBuffer) {
+                console.log('Received audio:', data.byteLength, 'bytes');
+                queueAudio(data);
+            } else {
+                try {
+                    const message = JSON.parse(data);
+                    handleControlMessage(message);
+                } catch (e) {
+                    console.log('Message:', data);
+                }
+            }
+        }
+
+        function handleControlMessage(message) {
+            switch (message.type) {
+                case 'bot_started_speaking':
+                    updateUI('speaking', 'Talking with you 💙');
+                    break;
+                case 'bot_stopped_speaking':
+                    updateUI('listening', 'I\'m listening 💙');
+                    break;
+                case 'user_started_speaking':
+                    updateUI('listening', 'I\'m listening 💙');
+                    // Hide topic chips on first user utterance
+                    hideTopicChips();
+                    break;
+                case 'user_stopped_speaking':
+                    updateUI('thinking', 'Thinking about what you said 💭');
+                    break;
+                case 'transcription':
+                    if (message.text) addMessage('user', message.text);
+                    break;
+                case 'text':
+                    if (message.text) addMessage('assistant', message.text);
+                    break;
+                case 'error':
+                    updateUI('error', message.message || 'Something went wrong. Let\'s try again 💙');
+                    break;
+            }
+        }
+
+        // =====================================================================
+        // Audio Playback (preserved from original)
+        // =====================================================================
+        function queueAudio(audioData) {
+            audioQueue.push(audioData);
+            if (!isPlaying) playNextAudio();
+        }
+
+        async function playNextAudio() {
+            if (audioQueue.length === 0) {
+                isPlaying = false;
+                return;
+            }
+
+            isPlaying = true;
+            const data = audioQueue.shift();
+
+            try {
+                const int16Data = new Int16Array(data);
+                const float32Data = new Float32Array(int16Data.length);
+                for (let i = 0; i < int16Data.length; i++) {
+                    float32Data[i] = int16Data[i] / 0x8000;
+                }
+
+                const buffer = audioContext.createBuffer(1, float32Data.length, SAMPLE_RATE);
+                buffer.getChannelData(0).set(float32Data);
+
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                source.onended = () => playNextAudio();
+                source.start();
+            } catch (error) {
+                console.error('Playback error:', error);
+                playNextAudio();
+            }
+        }
+
+        // =====================================================================
+        // Disconnect — cleans up WebSocket + audio
+        // =====================================================================
+        function disconnect() {
+            isConnected = false;
+
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            audioQueue = [];
+            isPlaying = false;
+            audioLevelFill.style.width = '0%';
+        }
+
+        // =====================================================================
+        // Cleanup
+        // =====================================================================
+        window.addEventListener('beforeunload', disconnect);
+
+        // =====================================================================
+        // Service Worker — PWA offline support
+        // =====================================================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('SW registered:', reg.scope))
+                    .catch((err) => console.warn('SW registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
