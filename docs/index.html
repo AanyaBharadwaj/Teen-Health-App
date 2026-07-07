@@ -1408,12 +1408,10 @@
             current: 'welcome',
 
             navigate(to) {
-                alert('navigate called with: ' + to);
                 if (to === this.current) return;
 
                 const fromEl = document.getElementById('screen-' + this.current);
                 const toEl = document.getElementById('screen-' + to);
-                alert('fromEl: ' + (fromEl ? 'found' : 'not found') + ', toEl: ' + (toEl ? 'found' : 'not found'));
                 if (!fromEl || !toEl) return;
 
                 // Exit current
@@ -1459,7 +1457,6 @@
             },
 
             onEnter(screen) {
-                alert('onEnter called with screen: ' + screen);
                 switch (screen) {
                     case 'profile':
                         // Focus name input
@@ -1564,7 +1561,6 @@
         // Screen 4: Greeting Animation
         // =====================================================================
         async function startGreetingAnimation() {
-            alert('startGreetingAnimation called!');
             const greetingText = document.getElementById('greetingText');
             const greetingSubtitle = document.getElementById('greetingSubtitle');
 
@@ -1588,7 +1584,6 @@
 
             // Pause then auto-advance
             await sleep(800);
-            alert('Navigating to conversation screen');
             Router.navigate('conversation');
         }
 
