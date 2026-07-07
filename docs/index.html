@@ -1350,9 +1350,9 @@
         // =====================================================================
         // Configuration
         // =====================================================================
-        // Set to "local" for local dev, or "cloud" for Render deployment.
-        // TODO: Make this configurable via environment variable or build process
-        const DEPLOY_MODE = 'local'; // 'local' | 'cloud'
+        // Auto-detect: use local server when running on localhost, cloud otherwise
+        const DEPLOY_MODE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+            ? 'local' : 'cloud';
 
         // Local mode: raw WebSocket to localhost
         const LOCAL_WS_URL = 'ws://localhost:8765';
